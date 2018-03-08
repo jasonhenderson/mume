@@ -11,7 +11,8 @@
     "build:watch": "tsc --project . --watch",
     "lint": "tsc --project . --noEmit && tslint --project . && prettier-check --ignore-path .gitignore \"{.,src/**,test/**}/{*.{j,t}s,*.md,ts*.json}\"",
     "format": "prettier --write --ignore-path .gitignore \"{.,src/**,test/**}/{*.{j,t}s,*.md,ts*.json}\"",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "atom": "npm run build && cd ../markdown-preview-enhanced && npm install"
   },
   "files": [
     "dependencies",
