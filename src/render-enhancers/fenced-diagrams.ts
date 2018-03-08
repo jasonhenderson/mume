@@ -136,13 +136,14 @@ async function renderDiagram(
       case "viz":
       case "dot": {
         let svg = diagramInCache;
+        let config;
         if (!svg) {
-          const engine = normalizedInfo.attributes["engine"] || "dot";
-          svg = Viz(code, { engine });
+          config = Object.assign({},  normalizedInfo.attributes, {engine: "dot"});
+          svg = Viz(code, config);
           graphsCache[checksum] = svg; // store to new cache
         }
         $output = `<p ${stringifyAttributes(
-          normalizedInfo.attributes,
+          config,
         )}>${svg}</p>`;
       }
       case "vega":
