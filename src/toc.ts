@@ -32,7 +32,7 @@ function sanitizeContent(content) {
     output += content.slice(offset, match.index)
     offset = match.index + match[0].length
 
-    if (match[0][0] === '<') 
+    if (match[0][0] === '<')
       output += match[4]
     else if (match[0][0] === '[' && match[0][1] === '^')  //  # footnote
       output += ''
@@ -61,7 +61,7 @@ export interface tocOption {
 }
 
 /**
- * 
+ *
  * @param opt:tocOption =
  * @param tokens = [{content:string, level:number, id:optional|string }]
  * @return {content, array}

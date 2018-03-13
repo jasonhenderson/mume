@@ -8,6 +8,7 @@ import computeChecksum from "../lib/compute-checksum";
 import { MarkdownEngineRenderOption } from "../markdown-engine";
 import { render as renderPlantuml } from "../puml";
 import { toc } from "../toc";
+import { nav } from "../nav";
 import { extensionDirectoryPath, mkdirp, readFile } from "../utility";
 
 const ensureClassInAttributes = (attributes: Attributes, className: string) => {
@@ -216,6 +217,14 @@ export async function runCodeChunk(
         ignoreLink: normalizedAttributes["ignore_link"],
       });
       result = tocObject.content;
+      outputFormat = "markdown";
+      blockModifiesSource = true;
+    } else if (cmd === "nav") {
+      const navObject = nav({
+        back: normalizedAttributes["back"],
+        maps: normalizedAttributes["maps"],
+      });
+      result = navObject.content;
       outputFormat = "markdown";
       blockModifiesSource = true;
     } else {
