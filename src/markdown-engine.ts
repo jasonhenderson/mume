@@ -640,6 +640,9 @@ if (typeof(window['Reveal']) !== 'undefined') {
       elementClass = [elementClass]
     elementClass = elementClass.join(' ')
 
+    const videoPlayButtonStyle = `
+      <link rel="stylesheet" href="file:///${path.resolve(extensionDirectoryPath, './dependencies/mbay/styles/video-play-button.css')}">\`
+    `
     // math style and script
     let mathStyle = ''
     if (this.config.mathRenderingOption === 'MathJax' || this.config.usePandocParser) {
@@ -951,7 +954,7 @@ sidebarTOCBtn.addEventListener('click', function(event) {
 
     // Add fix for svg embedded <a> href
     const webkitSvgScript = `
-      <script type="text/javascript" async src="file:///${path.resolve(extensionDirectoryPath, './dependencies/mbay/webkit-svg-a-fix.js')}"></script>
+      <script type="text/javascript" async src="file:///${path.resolve(extensionDirectoryPath, './dependencies/mbay/scripts/webkit-svg-a-fix.js')}"></script>
      `
 
     html = `
@@ -972,7 +975,8 @@ sidebarTOCBtn.addEventListener('click', function(event) {
       ${wavedromScript}
       ${flowchartScript}
       ${sequenceDiagramScript}
-
+      
+      ${videoPlayButtonStyle}
       <style> 
       ${styles} 
       </style>
@@ -1024,6 +1028,9 @@ sidebarTOCBtn.addEventListener('click', function(event) {
       elementClass = [elementClass]
     elementClass = elementClass.join(' ')
 
+    const videoPlayButtonStyle = `
+      <link rel="stylesheet" href="file:///${path.resolve(extensionDirectoryPath, './dependencies/mbay/styles/video-play-button.css')}">\`
+    `
     // math style and script
     let mathStyle = ''
     if (this.config.mathRenderingOption === 'MathJax' || this.config.usePandocParser) {
@@ -1344,6 +1351,7 @@ sidebarTOCBtn.addEventListener('click', function(event) {
       ${flowchartScript}
       ${sequenceDiagramScript}
 
+      ${videoPlayButtonStyle}
       <style> 
       ${styles} 
       </style>
@@ -1366,7 +1374,7 @@ sidebarTOCBtn.addEventListener('click', function(event) {
 
     // Add fix for svg embedded <a> href
     const webkitSvgScript = `
-      <script type="text/javascript" async src="file:///${path.resolve(extensionDirectoryPath, './dependencies/mbay/webkit-svg-a-fix.js')}"></script>
+      <script type="text/javascript" async src="file:///${path.resolve(extensionDirectoryPath, './dependencies/mbay/scripts/webkit-svg-a-fix.js')}"></script>
      `
 
     const scripts = `
@@ -1894,6 +1902,9 @@ sidebarTOCBtn.addEventListener('click', function(event) {
     outputHTML = $.html()
     const title = ebookConfig['title'] || 'no title'
 
+    const videoPlayButtonStyle = `
+      <link rel="stylesheet" href="file:///${path.resolve(extensionDirectoryPath, './dependencies/mbay/styles/video-play-button.css')}">\`
+    `
     // math
     let mathStyle = ''
     if (outputHTML.indexOf('class="katex"') > 0) {
@@ -1941,6 +1952,7 @@ sidebarTOCBtn.addEventListener('click', function(event) {
     ${globalStyles} 
     </style>
     ${mathStyle}
+    ${videoPlayButtonStyle}
   </head>
   <body ${path.extname(dest) === '.html' ? 'for="html-export"' : ''}>
     <div class="mume markdown-preview">
