@@ -949,6 +949,30 @@ sidebarTOCBtn.addEventListener('click', function(event) {
     })
     styles = imports + styles
 
+    // Add fix for svg embedded <a> href
+    const webkitSvgScript = `
+<script>
+  Link = function() {};
+  
+  Link.prototype.openLink = function(el) {
+    var link = $(el).attr('href');
+    var win = null;
+    win = window.open(link, '_self');
+    win.focus();
+  };
+  
+  window.Link = new Link();
+  
+  $(function(){
+      $(document).on('click', '.webkit-link', function(e) {
+          e.stopPropagation();
+          window.Link.openLink($(this));
+          return false;
+      });
+  });
+</script>
+`
+
     html = `
   <!DOCTYPE html>
   <html>
@@ -986,6 +1010,7 @@ sidebarTOCBtn.addEventListener('click', function(event) {
     ${sequenceDiagramInitScript}
     ${taskListScript}
     ${sidebarTOCScript}
+    ${webkitSvgScript}
   </html>
     `
 
@@ -1358,6 +1383,30 @@ sidebarTOCBtn.addEventListener('click', function(event) {
     `
     parts["body"] = body.trim()
 
+    // Add fix for svg embedded <a> href
+    const webkitSvgScript = `
+<script>
+  Link = function() {};
+  
+  Link.prototype.openLink = function(el) {
+    var link = $(el).attr('href');
+    var win = null;
+    win = window.open(link, '_self');
+    win.focus();
+  };
+  
+  window.Link = new Link();
+  
+  $(function(){
+      $(document).on('click', '.webkit-link', function(e) {
+          e.stopPropagation();
+          window.Link.openLink($(this));
+          return false;
+      });
+  });
+</script>
+`
+
     const scripts = `
     ${presentationInitScript}
     ${mermaidInitScript}
@@ -1366,6 +1415,7 @@ sidebarTOCBtn.addEventListener('click', function(event) {
     ${sequenceDiagramInitScript}
     ${taskListScript}
     ${sidebarTOCScript}
+    ${webkitSvgScript}
     `
     parts["scripts"] = scripts
 
