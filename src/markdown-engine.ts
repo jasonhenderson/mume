@@ -640,9 +640,17 @@ if (typeof(window['Reveal']) !== 'undefined') {
       elementClass = [elementClass]
     elementClass = elementClass.join(' ')
 
-    const videoPlayButtonStyle = `
-      <link rel="stylesheet" href="file:///${path.resolve(extensionDirectoryPath, './dependencies/mbay/styles/video-play-button.css')}">\`
-    `
+    let videoPlayButtonStyle = ''
+    if (options.offline) {
+      videoPlayButtonStyle = `
+        <link rel="stylesheet" href="file:///${path.resolve(extensionDirectoryPath, './dependencies/mbay/styles/video-play-button.css')}">\`
+      `
+    } else {
+      videoPlayButtonStyle = `
+        <link rel="stylesheet" href="/stylesheets/video-play-button.css')}">\`
+      `
+    }
+
     // math style and script
     let mathStyle = ''
     if (this.config.mathRenderingOption === 'MathJax' || this.config.usePandocParser) {
@@ -953,9 +961,16 @@ sidebarTOCBtn.addEventListener('click', function(event) {
     styles = imports + styles
 
     // Add fix for svg embedded <a> href
-    const webkitSvgScript = `
-      <script type="text/javascript" async src="file:///${path.resolve(extensionDirectoryPath, './dependencies/mbay/scripts/webkit-svg-a-fix.js')}"></script>
-     `
+    let webkitSvgScript = ''
+    if (options.offline) {
+      webkitSvgScript = `
+          <script type="text/javascript" async src="file:///${path.resolve(extensionDirectoryPath, './dependencies/mbay/scripts/webkit-svg-a-fix.js')}"></script>
+        `
+    } else {
+      webkitSvgScript = `
+          <script type="text/javascript" async src="/javascripts/webkit-svg-a-fix.js"></script>
+        `
+    }
 
     html = `
   <!DOCTYPE html>
@@ -1028,9 +1043,17 @@ sidebarTOCBtn.addEventListener('click', function(event) {
       elementClass = [elementClass]
     elementClass = elementClass.join(' ')
 
-    const videoPlayButtonStyle = `
-      <link rel="stylesheet" href="file:///${path.resolve(extensionDirectoryPath, './dependencies/mbay/styles/video-play-button.css')}">\`
-    `
+    let videoPlayButtonStyle = ''
+    if (options.offline) {
+      videoPlayButtonStyle = `
+        <link rel="stylesheet" href="file:///${path.resolve(extensionDirectoryPath, './dependencies/mbay/styles/video-play-button.css')}">\`
+      `
+    } else {
+      videoPlayButtonStyle = `
+        <link rel="stylesheet" href="/stylesheets/video-play-button.css')}">\`
+      `
+    }
+
     // math style and script
     let mathStyle = ''
     if (this.config.mathRenderingOption === 'MathJax' || this.config.usePandocParser) {
@@ -1373,9 +1396,16 @@ sidebarTOCBtn.addEventListener('click', function(event) {
     parts["body"] = body.trim()
 
     // Add fix for svg embedded <a> href
-    const webkitSvgScript = `
-      <script type="text/javascript" async src="file:///${path.resolve(extensionDirectoryPath, './dependencies/mbay/scripts/webkit-svg-a-fix.js')}"></script>
-     `
+    let webkitSvgScript = ''
+    if (options.offline) {
+      webkitSvgScript = `
+          <script type="text/javascript" async src="file:///${path.resolve(extensionDirectoryPath, './dependencies/mbay/scripts/webkit-svg-a-fix.js')}"></script>
+        `
+    } else {
+      webkitSvgScript = `
+          <script type="text/javascript" async src="/javascripts/webkit-svg-a-fix.js"></script>
+        `
+    }
 
     const scripts = `
     ${presentationInitScript}
@@ -1902,9 +1932,17 @@ sidebarTOCBtn.addEventListener('click', function(event) {
     outputHTML = $.html()
     const title = ebookConfig['title'] || 'no title'
 
-    const videoPlayButtonStyle = `
-      <link rel="stylesheet" href="file:///${path.resolve(extensionDirectoryPath, './dependencies/mbay/styles/video-play-button.css')}">\`
-    `
+    let videoPlayButtonStyle = ''
+    if (path.extname(dest) === '.html' && ebookConfig['html'] && ebookConfig['html'].cdn) {
+      videoPlayButtonStyle = `
+        <link rel="stylesheet" href="file:///${path.resolve(extensionDirectoryPath, './dependencies/mbay/styles/video-play-button.css')}">\`
+      `
+    } else {
+      videoPlayButtonStyle = `
+        <link rel="stylesheet" href="/stylesheets/video-play-button.css')}">\`
+      `
+    }
+
     // math
     let mathStyle = ''
     if (outputHTML.indexOf('class="katex"') > 0) {
