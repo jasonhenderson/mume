@@ -951,27 +951,8 @@ sidebarTOCBtn.addEventListener('click', function(event) {
 
     // Add fix for svg embedded <a> href
     const webkitSvgScript = `
-<script>
-  Link = function() {};
-  
-  Link.prototype.openLink = function(el) {
-    var link = $(el).attr('href');
-    var win = null;
-    win = window.open(link, '_self');
-    win.focus();
-  };
-  
-  window.Link = new Link();
-  
-  $(function(){
-      $(document).on('click', '.webkit-link', function(e) {
-          e.stopPropagation();
-          window.Link.openLink($(this));
-          return false;
-      });
-  });
-</script>
-`
+      <script type="text/javascript" async src="file:///${path.resolve(extensionDirectoryPath, './dependencies/mbay/webkit-svg-a-fix.js')}"></script>
+     `
 
     html = `
   <!DOCTYPE html>
@@ -1348,7 +1329,7 @@ sidebarTOCBtn.addEventListener('click', function(event) {
     })
     styles = imports + styles
 
-    const parts =  new Map<string, string>()
+    const parts = new Map<string, string>()
 
     const head = `
       ${presentationStyle}
@@ -1385,27 +1366,8 @@ sidebarTOCBtn.addEventListener('click', function(event) {
 
     // Add fix for svg embedded <a> href
     const webkitSvgScript = `
-<script>
-  Link = function() {};
-  
-  Link.prototype.openLink = function(el) {
-    var link = $(el).attr('href');
-    var win = null;
-    win = window.open(link, '_self');
-    win.focus();
-  };
-  
-  window.Link = new Link();
-  
-  $(function(){
-      $(document).on('click', '.webkit-link', function(e) {
-          e.stopPropagation();
-          window.Link.openLink($(this));
-          return false;
-      });
-  });
-</script>
-`
+      <script type="text/javascript" async src="file:///${path.resolve(extensionDirectoryPath, './dependencies/mbay/webkit-svg-a-fix.js')}"></script>
+     `
 
     const scripts = `
     ${presentationInitScript}
@@ -1512,7 +1474,7 @@ sidebarTOCBtn.addEventListener('click', function(event) {
     return dest
   }
 
-  public async streamExport({offline = false, runAllCodeChunks = false}): Promise<Map<string,string>> {
+  public async streamExport({offline = false, runAllCodeChunks = false}): Promise<Map<string, string>> {
     const inputString = await utility.readFile(this.filePath, {encoding: 'utf-8'})
     let {html, yamlConfig} = await this.parseMD(inputString, {
       useRelativeFilePath: true,
@@ -1531,7 +1493,7 @@ sidebarTOCBtn.addEventListener('click', function(event) {
       embedSVG = htmlConfig['embed_svg']
     }
 
-    const files = new Map<string,string>()
+    const files = new Map<string, string>()
 
     html = await this.generateHTMLTemplateForExport(html, yamlConfig, {
       isForPrint: false,
@@ -1557,7 +1519,7 @@ sidebarTOCBtn.addEventListener('click', function(event) {
     return files
   }
 
-  public async streamExportParts({offline = false, runAllCodeChunks = false}): Promise<Map<string,string>> {
+  public async streamExportParts({offline = false, runAllCodeChunks = false}): Promise<Map<string, string>> {
     const inputString = await utility.readFile(this.filePath, {encoding: 'utf-8'})
     let {html, yamlConfig} = await this.parseMD(inputString, {
       useRelativeFilePath: true,
@@ -1576,7 +1538,7 @@ sidebarTOCBtn.addEventListener('click', function(event) {
       embedSVG = htmlConfig['embed_svg']
     }
 
-    const parts = new Map<string,string>()
+    const parts = new Map<string, string>()
 
     const htmlParts = await this.generateHTMLTemplatePartsForExport(html, yamlConfig, {
       isForPrint: false,
