@@ -647,7 +647,7 @@ if (typeof(window['Reveal']) !== 'undefined') {
       `
     } else {
       videoPlayButtonStyle = `
-        <link rel="stylesheet" href="/stylesheets/video-play-button.css')}">\`
+        <link rel="stylesheet" href="/stylesheets/video-play-button.css">
       `
     }
 
@@ -1050,7 +1050,7 @@ sidebarTOCBtn.addEventListener('click', function(event) {
       `
     } else {
       videoPlayButtonStyle = `
-        <link rel="stylesheet" href="/stylesheets/video-play-button.css')}">\`
+        <link rel="stylesheet" href="/stylesheets/video-play-button.css">
       `
     }
 
@@ -1939,7 +1939,7 @@ sidebarTOCBtn.addEventListener('click', function(event) {
       `
     } else {
       videoPlayButtonStyle = `
-        <link rel="stylesheet" href="/stylesheets/video-play-button.css')}">\`
+        <link rel="stylesheet" href="/stylesheets/video-play-button.css">
       `
     }
 
