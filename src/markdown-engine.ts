@@ -21,6 +21,7 @@ import useMarkdownItCodeFences from './custom-markdown-it-features/code-fences';
 import useMarkdownItCriticMarkup from './custom-markdown-it-features/critic-markup';
 import useMarkdownItEmoji from './custom-markdown-it-features/emoji';
 import useMarkdownItMath from './custom-markdown-it-features/math';
+import useMarkdownItVideo from './custom-markdown-it-features/video';
 import useMarkdownItWikilink from './custom-markdown-it-features/wikilink';
 
 import enhanceWithCodeBlockStyling from './render-enhancers/code-block-styling';
@@ -213,6 +214,7 @@ export class MarkdownEngine {
     useMarkdownItCriticMarkup(this.md, this.config);
     useMarkdownItEmoji(this.md, this.config);
     useMarkdownItMath(this.md, this.config);
+    useMarkdownItVideo(this.md, this.config);
     useMarkdownItWikilink(this.md, this.config);
   }
 
@@ -505,6 +507,9 @@ if (typeof(window['Reveal']) !== 'undefined') {
     // style template
     styles += `<link rel="stylesheet" media="screen" href="${path.resolve(utility.extensionDirectoryPath, './styles/style-template.css')}">`
 
+    // Video link
+    styles += `<link rel="stylesheet" href="file:///${path.resolve(extensionDirectoryPath, './node_modules/markdown-it-video/markdown-it-video.css')}" >`
+
     // global styles
     styles += `<style>${utility.configs.globalStyle}</style>`
 
@@ -639,17 +644,6 @@ if (typeof(window['Reveal']) !== 'undefined') {
     if (typeof (elementClass) === 'string')
       elementClass = [elementClass]
     elementClass = elementClass.join(' ')
-
-    let videoPlayButtonStyle = ''
-    if (options.offline) {
-      videoPlayButtonStyle = `
-        <link rel="stylesheet" href="file:///${path.resolve(extensionDirectoryPath, './dependencies/mbay/styles/video-play-button.css')}">\`
-      `
-    } else {
-      videoPlayButtonStyle = `
-        <link rel="stylesheet" href="/stylesheets/video-play-button.css">
-      `
-    }
 
     // math style and script
     let mathStyle = ''
@@ -964,11 +958,11 @@ sidebarTOCBtn.addEventListener('click', function(event) {
     let webkitSvgScript = ''
     if (options.offline) {
       webkitSvgScript = `
-          <script type="text/javascript" async src="file:///${path.resolve(extensionDirectoryPath, './dependencies/mbay/scripts/webkit-svg-a-fix.js')}"></script>
+          <script type="text/javascript" async src="file:///${path.resolve(extensionDirectoryPath, './dependencies/mbay/scripts/webkit-svg-link.js.js')}"></script>
         `
     } else {
       webkitSvgScript = `
-          <script type="text/javascript" async src="/javascripts/webkit-svg-a-fix.js"></script>
+          <script type="text/javascript" async src="/javascripts/webkit-svg-link.js"></script>
         `
     }
 
@@ -991,7 +985,6 @@ sidebarTOCBtn.addEventListener('click', function(event) {
       ${flowchartScript}
       ${sequenceDiagramScript}
       
-      ${videoPlayButtonStyle}
       <style> 
       ${styles} 
       </style>
@@ -1042,17 +1035,6 @@ sidebarTOCBtn.addEventListener('click', function(event) {
     if (typeof (elementClass) === 'string')
       elementClass = [elementClass]
     elementClass = elementClass.join(' ')
-
-    let videoPlayButtonStyle = ''
-    if (options.offline) {
-      videoPlayButtonStyle = `
-        <link rel="stylesheet" href="file:///${path.resolve(extensionDirectoryPath, './dependencies/mbay/styles/video-play-button.css')}">\`
-      `
-    } else {
-      videoPlayButtonStyle = `
-        <link rel="stylesheet" href="/stylesheets/video-play-button.css">
-      `
-    }
 
     // math style and script
     let mathStyle = ''
@@ -1374,7 +1356,6 @@ sidebarTOCBtn.addEventListener('click', function(event) {
       ${flowchartScript}
       ${sequenceDiagramScript}
 
-      ${videoPlayButtonStyle}
       <style> 
       ${styles} 
       </style>
@@ -1399,11 +1380,11 @@ sidebarTOCBtn.addEventListener('click', function(event) {
     let webkitSvgScript = ''
     if (options.offline) {
       webkitSvgScript = `
-          <script type="text/javascript" async src="file:///${path.resolve(extensionDirectoryPath, './dependencies/mbay/scripts/webkit-svg-a-fix.js')}"></script>
+          <script type="text/javascript" async src="file:///${path.resolve(extensionDirectoryPath, './dependencies/mbay/scripts/webkit-svg-link.js')}"></script>
         `
     } else {
       webkitSvgScript = `
-          <script type="text/javascript" async src="/javascripts/webkit-svg-a-fix.js"></script>
+          <script type="text/javascript" async src="/javascripts/webkit-svg-link.js"></script>
         `
     }
 
@@ -1932,17 +1913,6 @@ sidebarTOCBtn.addEventListener('click', function(event) {
     outputHTML = $.html()
     const title = ebookConfig['title'] || 'no title'
 
-    let videoPlayButtonStyle = ''
-    if (path.extname(dest) === '.html' && ebookConfig['html'] && ebookConfig['html'].cdn) {
-      videoPlayButtonStyle = `
-        <link rel="stylesheet" href="file:///${path.resolve(extensionDirectoryPath, './dependencies/mbay/styles/video-play-button.css')}">\`
-      `
-    } else {
-      videoPlayButtonStyle = `
-        <link rel="stylesheet" href="/stylesheets/video-play-button.css">
-      `
-    }
-
     // math
     let mathStyle = ''
     if (outputHTML.indexOf('class="katex"') > 0) {
@@ -1990,7 +1960,6 @@ sidebarTOCBtn.addEventListener('click', function(event) {
     ${globalStyles} 
     </style>
     ${mathStyle}
-    ${videoPlayButtonStyle}
   </head>
   <body ${path.extname(dest) === '.html' ? 'for="html-export"' : ''}>
     <div class="mume markdown-preview">
@@ -2558,6 +2527,13 @@ sidebarTOCBtn.addEventListener('click', function(event) {
         html = `<pre>${error}</pre>`
       }
     } else { // markdown-it
+      if (options.isForPreview) {
+        this.md.enable("videoLink")
+        this.md.disable("video")
+      } else {
+        this.md.disable("videoLink")
+        this.md.enable("video")
+      }
       html = this.md.render(outputString)
     }
 

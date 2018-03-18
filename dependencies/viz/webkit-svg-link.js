@@ -1,7 +1,7 @@
 WebkitSvgLink = function() {};
 
 WebkitSvgLink.prototype.openLink = function(el) {
-  var link = $(el).attr('href');
+  var link = el.getAttribute('href');
   var win = null;
   win = window.open(link, '_self');
   win.focus();
@@ -9,10 +9,9 @@ WebkitSvgLink.prototype.openLink = function(el) {
 
 window.WebkitSvgLink = new WebkitSvgLink();
 
-$(function(){
-  $(document).on('click', '.webkit-link', function(e) {
-    e.stopPropagation();
-    window.WebkitSvgLink.openLink($(this));
-    return false;
-  });
-});
+function svgClick(e) {
+  console.log("canceled")
+  e.preventDefault();
+  //e.stopPropagation();
+  window.WebkitSvgLink.openLink(e.target);
+};

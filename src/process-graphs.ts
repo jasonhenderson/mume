@@ -147,7 +147,7 @@ export async function processGraphs(text:string,
         if (!(svg = graphsCache[checksum])) {
           const config = Object.assign({}, options, { engine: "dot" });
           svg = Viz(content, config)
-          svg = svg.replace(/xlink:href/g, "href");
+          svg = svg.replace(/xlink:href/g, "href").replace("<a", "<a class='.webkit-svg-link'");
         }
         await convertSVGToPNGFile(options['filename'], svg, lines, start, end, true)
       } catch(error) {

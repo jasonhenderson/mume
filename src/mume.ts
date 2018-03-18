@@ -6,13 +6,14 @@ import * as os from "os"
 import * as path from "path"
 
 import * as utility_ from "./utility"
+import {MathRenderingOption} from "./markdown-engine-config";
 
 let INITIALIZED = false
 let CONFIG_CHANGE_CALLBACK: () => void = null
 
 export const utility = utility_
 export const configs = utility.configs
-export { MarkdownEngineConfig } from './markdown-engine-config'
+export { MarkdownEngineConfig, MathRenderingOption } from './markdown-engine-config'
 export { MarkdownEngine } from "./markdown-engine"
 export { CodeChunkData } from "./code-chunk-data"
 

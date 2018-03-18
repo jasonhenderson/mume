@@ -12,7 +12,7 @@
     "lint": "tsc --project . --noEmit && tslint --project . && prettier-check --ignore-path .gitignore \"{.,src/**,test/**}/{*.{j,t}s,*.md,ts*.json}\"",
     "format": "prettier --write --ignore-path .gitignore \"{.,src/**,test/**}/{*.{j,t}s,*.md,ts*.json}\"",
     "prepare": "npm run build",
-    "atom": "npm run build && cd ../markdown-preview-enhanced && npm install"
+    "atom": "rm -r ./node_modules/markdown-it-video && npm install markdown-it-video && npm run build && cd ../markdown-preview-enhanced && rm -r ./node_modules/@shd101wyy/mume && npm install mume && npm run build && cd ../mume "
   },
   "files": [
     "dependencies",
@@ -28,7 +28,7 @@
     "kachkaev"
   ],
   "license": "NCSA",
-  "repository": "https://github.com/shd101wyy/mume",
+  "repository": "https://github.com/jasonhenderson/mume",
   "dependencies": {
     "babyparse": "^0.4.6",
     "cheerio": "0.15.0",
@@ -36,6 +36,8 @@
     "gray-matter": "^3.0.7",
     "less": "^2.7.2",
     "lodash": "^4.17.5",
+    "markdown-it-container": "^2.0.0",
+    "markdown-it-video": "github:jasonhenderson/markdown-it-video",
     "mkdirp": "^0.5.1",
     "qiniu": "=7.1.1",
     "request": "^2.81.0",

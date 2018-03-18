@@ -140,7 +140,7 @@ async function renderDiagram(
         if (!svg) {
           config = Object.assign({},  normalizedInfo.attributes, {engine: "dot"});
           svg = Viz(code, config);
-          const fixedSvg = svg.replace(/xlink:href/g, "href").replace("<a", "<a class='.webkit-link'");
+          const fixedSvg = svg.replace(/xlink:href/g, "href").replace("<a", "<a  class='.webkit-svg-link'");
           graphsCache[checksum] = fixedSvg; // store to new cache
         }
         $output = `<p ${stringifyAttributes(

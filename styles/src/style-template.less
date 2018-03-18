@@ -9,7 +9,7 @@
     page-break-before: always;
   }
 
-  // code block line numbers 
+  // code block line numbers
   pre.line-numbers {
     position: relative;
     padding-left: 3.8em;
@@ -96,7 +96,7 @@ html body[for="html-export"]:not([data-presentation-mode]) {
   top: 0;
   left: 0;
   margin: 0;
-  padding: 0; // <= this has to be zero; otherwise prince export will have issue.  
+  padding: 0; // <= this has to be zero; otherwise prince export will have issue.
   overflow: auto;
 
   .markdown-preview {
@@ -113,7 +113,7 @@ html body[for="html-export"]:not([data-presentation-mode]) {
 
     // mobile
     @media screen and (max-width: 450px) {
-      font-size: 14px !important; // <= this line is necessary. otherwise #sidebar-toc-btn position will be wrong.  
+      font-size: 14px !important; // <= this line is necessary. otherwise #sidebar-toc-btn position will be wrong.
       padding: 1em;
     }
   }
@@ -138,7 +138,7 @@ html body[for="html-export"]:not([data-presentation-mode]) {
   }
 
   &[html-show-sidebar-toc] {
-    #sidebar-toc-btn { 
+    #sidebar-toc-btn {
       opacity: 1.0
     }
 
@@ -155,7 +155,7 @@ html body[for="html-export"]:not([data-presentation-mode]) {
       box-shadow: 0 0 4px rgba(150,150,150,0.33);
       box-sizing: border-box;
       overflow: auto;
-      background-color: inherit;
+      background-color: #EEEEEE;
 
       a {
         text-decoration: none;
@@ -176,8 +176,8 @@ html body[for="html-export"]:not([data-presentation-mode]) {
       left: @sidebar-toc-width;
       width: calc(~"100% - " @sidebar-toc-width);
       padding: 2em calc(~"50% - 457px - " (@sidebar-toc-width/2));
-      margin: 0;       
-      box-sizing: border-box; 
+      margin: 0;
+      box-sizing: border-box;
 
       @media screen and (max-width: (914px+@sidebar-toc-width+60px)) {
         padding: 2em;

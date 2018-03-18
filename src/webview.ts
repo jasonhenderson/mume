@@ -9,7 +9,7 @@ interface MarkdownConfig {
   imageUploader?: string,
   enableScriptExecution?: boolean
   /**
-   * Whether this preview is for vscode or not.  
+   * Whether this preview is for vscode or not.
    */
   vscode?: boolean
   zoomLevel?: number
@@ -77,7 +77,7 @@ class PreviewController {
   private refreshingIconTimeout = null
 
   /**
-   * Scroll map that maps buffer line to scrollTops of html elements  
+   * Scroll map that maps buffer line to scrollTops of html elements
    */
   private scrollMap: Array<number> = null
 
@@ -103,7 +103,7 @@ class PreviewController {
 
   /**
    * Whether enter presentation mode
-   */ 
+   */
   private presentationMode: boolean
 
   /**
@@ -112,7 +112,7 @@ class PreviewController {
   private slidesData: Array<{line:number, h:number, v:number, offset:number}> = []
 
   /**
-   * Current slide offset 
+   * Current slide offset
    */
   private currentSlideOffset: number = -1
 
@@ -128,7 +128,7 @@ class PreviewController {
 
 
   /**
-   * Markdown file URI 
+   * Markdown file URI
    */
   private sourceUri = null
 
@@ -172,7 +172,7 @@ class PreviewController {
     }
     */
 
-    console.log('init webview: ' + this.sourceUri)
+    //console.log('init webview: ' + this.sourceUri)
 
     // console.log(document.getElementsByTagName('html')[0].innerHTML)
     // console.log(JSON.stringify(config))
@@ -189,7 +189,7 @@ class PreviewController {
         refreshBtn: document.getElementsByClassName('refresh-btn')[0] as HTMLElement,
         sidebarTOCBtn: document.getElementsByClassName('sidebar-toc-btn')[0] as HTMLElement
       },
-    this.refreshingIcon = document.getElementsByClassName('refreshing-icon')[0] as HTMLElement, 
+    this.refreshingIcon = document.getElementsByClassName('refreshing-icon')[0] as HTMLElement,
 
     /** init toolbar event */
     this.initToolbarEvent()
@@ -202,10 +202,10 @@ class PreviewController {
 
     /**
      * If it's not presentation mode, then we need to tell the parent window
-     * that the preview is loaded, and the markdown needs to be updated so that 
+     * that the preview is loaded, and the markdown needs to be updated so that
      * we can update properties like `sidebarTOCHTML`, etc...
      */
-    if (!this.presentationMode) { 
+    if (!this.presentationMode) {
       previewElement.onscroll = this.scrollEvent.bind(this)
 
       this.postMessage('webviewFinishLoading', [this.sourceUri])
@@ -213,18 +213,18 @@ class PreviewController {
       this.config.scrollSync = true // <= force to enable scrollSync for presentation
       this.initPresentationEvent()
     }
-    
+
     // console.log(document.getElementsByTagName('html')[0].outerHTML)
   }
 
   /**
    * Post message to parent window
-   * @param command 
-   * @param args 
+   * @param command
+   * @param args
    */
   private postMessage(command:string, args:any[]=[]) {
     if (this.config.vscode) { // post message to vscode
-      window.parent.postMessage({ 
+      window.parent.postMessage({
         command: 'did-click-link',
         data: `command:_mume.${command}?${JSON.stringify(args)}`
       }, 'file://')
@@ -239,7 +239,7 @@ class PreviewController {
   /**
    * init events for tool bar
    */
-  private initToolbarEvent() {    
+  private initToolbarEvent() {
       const toolbarElement = this.toolbar.toolbar
       const showToolbar = ()=> toolbarElement.style.opacity = "1"
       this.previewElement.onmouseenter = showToolbar
@@ -279,7 +279,7 @@ class PreviewController {
         this.previewElement.style.width = "100%"
       }
 
-      this.scrollMap = null 
+      this.scrollMap = null
     }
   }
 
@@ -296,7 +296,7 @@ class PreviewController {
     }
   }
 
-  
+
   /**
    * init .refresh-btn
    */
@@ -316,7 +316,7 @@ class PreviewController {
       selector: '.preview-container',
       items: {
         "open_in_browser": {
-          name: "Open in Browser", 
+          name: "Open in Browser",
           callback: ()=> this.postMessage('openInBrowser', [this.sourceUri])
         },
         "sep1": "---------",
@@ -339,7 +339,7 @@ class PreviewController {
           items: {
             "chrome_pdf": {
               name: "PDF",
-              callback: ()=> this.postMessage('chromeExport', [this.sourceUri, 'pdf'])              
+              callback: ()=> this.postMessage('chromeExport', [this.sourceUri, 'pdf'])
             },
             "chrome_png": {
               name: "PNG",
@@ -351,7 +351,7 @@ class PreviewController {
             }
           }
         },
-        "phantomjs_export": 
+        "phantomjs_export":
         {
           name: "PhantomJS",
           items: {
@@ -369,7 +369,7 @@ class PreviewController {
             }
           }
         },
-        "prince_export": 
+        "prince_export":
         {
           name: "PDF (prince)",
           callback: ()=> this.postMessage('princeExport', [this.sourceUri])
@@ -427,7 +427,7 @@ class PreviewController {
     // used to insert image url
     const urlEditor = imageHelper.getElementsByClassName('url-editor')[0] as HTMLInputElement
     urlEditor.addEventListener('keypress', (event:KeyboardEvent)=> {
-      if (event.keyCode === 13) { // enter key pressed 
+      if (event.keyCode === 13) { // enter key pressed
         let url = urlEditor.value.trim()
         if (url.indexOf(' ') >= 0) {
           url = `<${url}>`
@@ -436,9 +436,9 @@ class PreviewController {
           $['modal'].close() // close modal
           this.postMessage('insertImageUrl', [this.sourceUri, url])
         }
-        return false 
+        return false
       } else {
-        return true 
+        return true
       }
     })
 
@@ -525,7 +525,7 @@ class PreviewController {
 
       // scroll slides
       window['Reveal'].addEventListener('slidechanged', (event)=> {
-        if (Date.now() < this.previewScrollDelay) return 
+        if (Date.now() < this.previewScrollDelay) return
 
         const {indexh, indexv} = event
         for (let i = 0; i < this.slidesData.length; i++) {
@@ -574,7 +574,7 @@ class PreviewController {
       this.previewElement.style.width = `calc(100% - ${268 / zoomLevel}px)`
     }
     this.scrollMap = null
-    
+
     if (!this.config.vscode)
       this.postMessage('setZoomLevel', [this.sourceUri, zoomLevel])
   }
@@ -594,7 +594,7 @@ class PreviewController {
       // const mermaidCodes = []
       for (let i = 0; i < mermaidGraphs.length; i++) {
         const mermaidGraph = mermaidGraphs[i] as HTMLElement
-        // if (mermaidGraph.getAttribute('data-processed') === 'true') continue 
+        // if (mermaidGraph.getAttribute('data-processed') === 'true') continue
 
         mermaid.parseError = function(err) {
           mermaidGraph.innerHTML = `<pre class="language-text">${err.toString()}</pre>`
@@ -615,7 +615,7 @@ class PreviewController {
   }
 
   /**
-   * render flowchart 
+   * render flowchart
    * This function doesn't work with `hiddenPreviewElement`
    */
   private renderFlowchart() {
@@ -639,7 +639,7 @@ class PreviewController {
         newFlowchartCache[text] = flow.innerHTML
       }
       this.flowchartCache = newFlowchartCache
-      resolve()      
+      resolve()
     })
   }
 
@@ -653,7 +653,7 @@ class PreviewController {
       for (let i = 0; i < sequenceDiagrams.length; i++) {
         const sequence = sequenceDiagrams[i] as HTMLElement
         const text = sequence.textContent.trim()
-        const theme = sequence.getAttribute('theme') || 'simple'        
+        const theme = sequence.getAttribute('theme') || 'simple'
         const cacheKey = (text + '$' + theme)
         if (cacheKey in this.sequenceDiagramCache) {
           sequence.innerHTML = this.sequenceDiagramCache[cacheKey]
@@ -718,13 +718,13 @@ class PreviewController {
         if (!unprocessedElements.length) return resolve()
 
         window['MathJax'].Hub.Queue(
-          ['Typeset', MathJax.Hub, this.hiddenPreviewElement], 
+          ['Typeset', MathJax.Hub, this.hiddenPreviewElement],
           [()=> {
             // sometimes the this callback will be called twice
             // and only the second time will the Math expressions be rendered.
-            // therefore, I added the line below to check whether math is already rendered.  
+            // therefore, I added the line below to check whether math is already rendered.
             if (!this.hiddenPreviewElement.getElementsByClassName('MathJax').length) return
-            
+
             this.scrollMap = null
             return resolve()
           }])
@@ -736,21 +736,21 @@ class PreviewController {
 
   /**
    * Run code chunk with 'id'
-   * @param id 
+   * @param id
    */
   private runCodeChunk(id:string) {
     if (!this.config.enableScriptExecution) return
 
     const codeChunk = document.querySelector(`.code-chunk[data-id="${id}"]`)
     const running = codeChunk.classList.contains('running')
-    if (running) return 
+    if (running) return
     codeChunk.classList.add('running')
 
     if (codeChunk.getAttribute('data-cmd') === 'javascript') { // javascript code chunk
       const code = codeChunk.getAttribute('data-code')
       try {
         eval(`((function(){${code}$})())`)
-        codeChunk.classList.remove('running') // done running javascript code 
+        codeChunk.classList.remove('running') // done running javascript code
 
         const CryptoJS = window["CryptoJS"]
         const result = CryptoJS.AES.encrypt(codeChunk.getElementsByClassName('output-div')[0].outerHTML, "mume").toString()
@@ -800,15 +800,15 @@ class PreviewController {
    */
   private setupCodeChunks() {
     const codeChunks = this.previewElement.getElementsByClassName('code-chunk')
-    if (!codeChunks.length) return 
+    if (!codeChunks.length) return
 
-    let needToSetupCodeChunkId = false 
+    let needToSetupCodeChunkId = false
 
     for (let i = 0; i < codeChunks.length; i++) {
       const codeChunk = codeChunks[i],
             id = codeChunk.getAttribute('data-id')
 
-      // bind click event 
+      // bind click event
       const runBtn = codeChunk.getElementsByClassName('run-btn')[0]
       const runAllBtn = codeChunk.getElementsByClassName('run-all-btn')[0]
       if (runBtn) {
@@ -825,7 +825,7 @@ class PreviewController {
   }
 
   /**
-   * render sidebar toc 
+   * render sidebar toc
    */
   private renderSidebarTOC() {
     if (!this.enableSidebarTOC) return
@@ -841,7 +841,7 @@ class PreviewController {
    */
   private async initEvents() {
     await Promise.all([
-      this.renderMathJax(), 
+      this.renderMathJax(),
       this.renderMermaid(),
       this.renderWavedrom()
     ])
@@ -863,7 +863,7 @@ class PreviewController {
   }
 
   /**
-   * Bind <a href="..."></a> click events.  
+   * Bind <a href="..."></a> click events.
    */
   private bindTagAClickEvent() {
     const as = this.previewElement.getElementsByTagName('a')
@@ -928,7 +928,7 @@ class PreviewController {
 
           let checked = checkbox.checked
           if (checked) {
-            checkbox.setAttribute('checked', '')  
+            checkbox.setAttribute('checked', '')
           } else {
             checkbox.removeAttribute('checked')
           }
@@ -944,12 +944,12 @@ class PreviewController {
 
   /**
    * update previewElement innerHTML content
-   * @param html 
+   * @param html
    */
   private updateHTML(html:string, id:string, classes:string) {
     // If it's now presentationMode, then this function shouldn't be called.
-    // If this function is called, then it might be in the case that 
-    //   1. Using singlePreview 
+    // If this function is called, then it might be in the case that
+    //   1. Using singlePreview
     //   2. Switch from a presentationMode file to not presentationMode file.
     if (this.presentationMode) {
       this.postMessage('refreshPreview', [this.sourceUri])
@@ -961,9 +961,9 @@ class PreviewController {
     this.hiddenPreviewElement.innerHTML = html
 
     const scrollTop = this.previewElement.scrollTop
-    // init several events 
+    // init several events
     this.initEvents().then(()=> {
-      this.scrollMap = null 
+      this.scrollMap = null
 
       this.bindTagAClickEvent()
       this.bindTaskListEvent()
@@ -971,15 +971,15 @@ class PreviewController {
       // set id and classes
       this.previewElement.id = id || ''
       this.previewElement.setAttribute('class', `mume markdown-preview ${classes}`)
-      
-      // scroll to initial position 
+
+      // scroll to initial position
       if (!this.doneLoadingPreview) {
         this.doneLoadingPreview = true
         this.scrollToRevealSourceLine(this.initialLine)
 
         // clear @scrollMap after 2 seconds because sometimes
         // loading images will change scrollHeight.
-        setTimeout(()=> this.scrollMap = null, 2000) 
+        setTimeout(()=> this.scrollMap = null, 2000)
       } else { // restore scrollTop
         this.previewElement.scrollTop = scrollTop // <= This line is necessary...
       }
@@ -996,7 +996,7 @@ class PreviewController {
     if (!this.totalLineCount) return null
     const _scrollMap = [],
           nonEmptyList = []
-    
+
     for (let i = 0; i < this.totalLineCount; i++) {
       _scrollMap.push(-1)
     }
@@ -1049,15 +1049,15 @@ class PreviewController {
     return _scrollMap  // scrollMap's length == screenLineCount (vscode can't get screenLineCount... sad)
   }
 
-  private scrollEvent() { 
+  private scrollEvent() {
     if (!this.config.scrollSync) return
 
     if (!this.scrollMap) {
       this.scrollMap = this.buildScrollMap()
-      return 
+      return
     }
 
-    if ( Date.now() < this.previewScrollDelay ) return 
+    if ( Date.now() < this.previewScrollDelay ) return
     this.previewSyncSource()
   }
 
@@ -1069,7 +1069,7 @@ class PreviewController {
       scrollToLine = 0
 
       this.postMessage('revealLine', [this.sourceUri, scrollToLine])
-      return 
+      return
     }
 
     let top = this.previewElement.scrollTop + this.previewElement.offsetHeight / 2
@@ -1081,7 +1081,7 @@ class PreviewController {
     let j = this.scrollMap.length - 1
     let count = 0
     let screenRow = -1 // the screenRow is the bufferRow in vscode.
-    let mid 
+    let mid
 
     while (count < 20) {
       if (Math.abs(top - this.scrollMap[i]) < 20) {
@@ -1140,7 +1140,7 @@ class PreviewController {
       if (line >= this.slidesData[i].line) {
         const {h, v, offset} = this.slidesData[i]
         if (offset === this.currentSlideOffset) return
-        
+
         this.currentSlideOffset = offset
         window['Reveal'].slide(h, v)
         break
@@ -1155,20 +1155,20 @@ class PreviewController {
   private scrollSyncToLine(line:number, topRatio:number = 0.372) {
     if (!this.scrollMap) this.scrollMap = this.buildScrollMap()
     if (!this.scrollMap || line >= this.scrollMap.length) return
-    
-    if (line + 1 === this.totalLineCount) { // last line 
+
+    if (line + 1 === this.totalLineCount) { // last line
       this.scrollToPos(this.previewElement.scrollHeight)
     } else {
     /**
-     * Since I am not able to access the viewport of the editor 
-     * I used `golden section` (0.372) here for scrollTop.  
+     * Since I am not able to access the viewport of the editor
+     * I used `golden section` (0.372) here for scrollTop.
      */
       this.scrollToPos(Math.max(this.scrollMap[line] - this.previewElement.offsetHeight * topRatio, 0))
     }
   }
 
   /**
-   * Smoothly scroll the previewElement to `scrollTop` position.  
+   * Smoothly scroll the previewElement to `scrollTop` position.
    * @param scrollTop: the scrollTop position that the previewElement should be at
    */
   private scrollToPos(scrollTop) {
@@ -1177,7 +1177,7 @@ class PreviewController {
       this.scrollTimeout = null
     }
 
-    if (scrollTop < 0) return 
+    if (scrollTop < 0) return
 
     const delay = 10
 
@@ -1197,7 +1197,7 @@ class PreviewController {
         this.previewScrollDelay = Date.now() + 500
 
         this.previewElement.scrollTop += perTick
-        if (this.previewElement.scrollTop == scrollTop) return 
+        if (this.previewElement.scrollTop == scrollTop) return
 
         helper(duration-delay)
       }, delay)
@@ -1208,12 +1208,12 @@ class PreviewController {
   }
 
 /**
- * It's unfortunate that I am not able to access the viewport.  
- * @param line 
+ * It's unfortunate that I am not able to access the viewport.
+ * @param line
  */
 private scrollToRevealSourceLine(line, topRatio=0.372) {
   if (line === this.currentLine) {
-    return 
+    return
   } else {
     this.currentLine = line
   }
@@ -1229,7 +1229,7 @@ private scrollToRevealSourceLine(line, topRatio=0.372) {
 }
 
 /**
- * [esc] is pressed.  
+ * [esc] is pressed.
  */
 private escPressed(event=null) {
   if (event) {
@@ -1248,7 +1248,7 @@ private escPressed(event=null) {
 }
 
 /**
- * Initialize several `window` events.  
+ * Initialize several `window` events.
  */
 private initWindowEvents() {
   /**
@@ -1257,8 +1257,8 @@ private initWindowEvents() {
   window.addEventListener('keydown', (event)=> {
     if (event.shiftKey && event.ctrlKey && event.which === 83) { // ctrl+shift+s preview sync source
       return this.previewSyncSource()
-    } else if ((event.metaKey || event.ctrlKey)) { // ctrl+c copy 
-      if (event.which === 67) { // [c] copy 
+    } else if ((event.metaKey || event.ctrlKey)) { // ctrl+c copy
+      if (event.which === 67) { // [c] copy
         document.execCommand('copy')
       } else if (event.which === 187 && !this.config.vscode) { // [+] zoom in
         this.zoomIn()
@@ -1272,7 +1272,7 @@ private initWindowEvents() {
         } else {
           this.previewElement.scrollTop = 0
         }
-      } 
+      }
     } else if (event.which === 27) { // [esc] toggle sidebar toc
       this.escPressed(event)
     }
@@ -1283,9 +1283,9 @@ private initWindowEvents() {
   })
 
   window.addEventListener('message', (event)=> {
-    const data = event.data 
-    if (!data) return 
-    
+    const data = event.data
+    if (!data) return
+
     // console.log('receive message: ' + data.command)
 
     if (data.command === 'updateHTML') {
@@ -1294,7 +1294,7 @@ private initWindowEvents() {
       this.sourceUri = data.sourceUri
       this.renderSidebarTOC()
       this.updateHTML(data.html, data.id, data.class)
-    } else if (data.command === 'changeTextEditorSelection' && 
+    } else if (data.command === 'changeTextEditorSelection' &&
                (this.config.scrollSync || data.forced)) {
       const line = parseInt(data.line)
       let topRatio = parseFloat(data.topRatio)

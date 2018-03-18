@@ -66,7 +66,7 @@ export interface tocOption {
  * @param tokens = [{content:string, level:number, id:optional|string }]
  * @return {content, array}
  */
-export function toc(tokens, opt:tocOption) {
+export function   toc(tokens, opt:tocOption) {
   if (!tokens)
     return {content: '', array: []}
 
