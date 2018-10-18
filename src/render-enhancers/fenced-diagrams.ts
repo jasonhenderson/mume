@@ -1,16 +1,14 @@
 // tslint:disable:ban-types no-var-requires
 import { resolve } from "path";
+import * as YAML from "yamljs";
+
 import { render as renderDitaa } from "../ditaa";
-import computeChecksum from '../lib/compute-checksum';
+import computeChecksum from "../lib/compute-checksum";
 import { render as renderPlantuml } from "../puml";
-import { extensionDirectoryPath, mkdirp, readFile } from "../utility";
+import { mkdirp, readFile } from "../utility";
 import { toSVG as vegaToSvg } from "../vega";
 import { toSVG as vegaLiteToSvg } from "../vega-lite";
-
-const Viz = require(resolve(
-  extensionDirectoryPath,
-  "./dependencies/viz/viz.js",
-));
+import { Viz } from "../viz";
 
 import { Attributes, stringifyAttributes } from "../lib/attributes";
 import { BlockInfo } from "../lib/block-info";
@@ -107,8 +105,11 @@ async function renderDiagram(
       case "mermaid": {
         // these diagrams are rendered on the client
         $output = `<div ${stringifyAttributes(
-          ensureClassInAttributes(normalizedInfo.attributes, normalizedInfo.language),
-        )}>${code}</div>`
+          ensureClassInAttributes(
+            normalizedInfo.attributes,
+            normalizedInfo.language,
+          ),
+        )}>${code}</div>`;
         break;
       }
       case "wavedrom": {
@@ -138,27 +139,46 @@ async function renderDiagram(
         let svg = diagramInCache;
         let config;
         if (!svg) {
-          config = Object.assign({},  normalizedInfo.attributes, {engine: "dot"});
-          svg = Viz(code, config);
+          const engine = normalizedInfo.attributes["engine"] || "dot";
+          svg = await Viz(code, { engine });
           const fixedSvg = svg.replace(/xlink:href/g, "href").replace("<a", "<a  class='.webkit-svg-link'");
           graphsCache[checksum] = fixedSvg; // store to new cache
         }
         $output = `<p ${stringifyAttributes(
           config,
         )}>${svg}</p>`;
+        break;
       }
       case "vega":
       case "vega-lite": {
-        let svg = diagramInCache;
-        if (!svg) {
-          const vegaFunctionToCall =
-            normalizedInfo.language === "vega" ? vegaToSvg : vegaLiteToSvg;
-          svg = await vegaFunctionToCall(code, fileDirectoryPath);
-          graphsCache[checksum] = svg; // store to new cache
+        if (normalizedInfo.attributes["interactive"] === true) {
+          const rawSpec = code.trim();
+          let spec;
+          if (rawSpec[0] !== "{") {
+            // yaml
+            spec = YAML.parse(rawSpec);
+          } else {
+            // json
+            spec = JSON.parse(rawSpec);
+          }
+          $output = hiddenCode(
+            JSON.stringify(spec),
+            normalizedInfo.attributes,
+            normalizedInfo.language,
+          );
+        } else {
+          let svg = diagramInCache;
+          if (!svg) {
+            const vegaFunctionToCall =
+              normalizedInfo.language === "vega" ? vegaToSvg : vegaLiteToSvg;
+            svg = await vegaFunctionToCall(code, fileDirectoryPath);
+            graphsCache[checksum] = svg; // store to new cache
+          }
+          $output = `<p ${stringifyAttributes(
+            normalizedInfo.attributes,
+          )}>${svg}</p>`;
         }
-        $output = `<p ${stringifyAttributes(
-          normalizedInfo.attributes,
-        )}>${svg}</p>`;
+        break;
       }
       case "ditaa": {
         // historically, ditaa worked only when cmd=true.
@@ -186,6 +206,7 @@ async function renderDiagram(
           "src",
           `data:image/png;charset=utf-8;base64,${pngAsBase64}`,
         );
+        break;
       }
     }
   } catch (error) {
@@ -203,3 +224,8 @@ async function renderDiagram(
     $container.data("hiddenByEnhancer", true);
   }
 }
+
+const hiddenCode = (code, attributes, language) =>
+  `<p ${stringifyAttributes(
+    ensureClassInAttributes(attributes, language),
+  )}><span style="display: none">${code}</span></p>`;
