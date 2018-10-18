@@ -295,7 +295,6 @@ export async function transformMarkdown(
         if (!inCodeBlock && forPreview) {
           outputString += createAnchor(lineNo);
         }
-        inBlock = !inBlock
 
         const containsCmd = !!line.match(/\"?cmd\"?\s*[:=\s}]/);
         if (!inCodeBlock && !notSourceFile && containsCmd) {

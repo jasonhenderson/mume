@@ -1,8 +1,6 @@
 // tslint:disable-next-line no-implicit-dependencies
 import { MarkdownIt } from "markdown-it";
-import { resolve } from "path";
 import { MarkdownEngineConfig } from "../markdown-engine-config";
-import { extensionDirectoryPath } from "../utility";
 
 export default (md: MarkdownIt, config: MarkdownEngineConfig) => {
   md.use(require('markdown-it-container'), 'nav', {

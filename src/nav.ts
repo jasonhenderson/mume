@@ -1,5 +1,3 @@
-import * as uslug from "uslug"
-
 /**
  *  eg:
  * Haha [A](www.a.com) xxx [B](www.b.com)

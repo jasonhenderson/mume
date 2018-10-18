@@ -1499,8 +1499,6 @@ sidebarTOCBtn.addEventListener('click', function(event) {
     // math style and script
     let mathStyle = ''
     if (this.config.mathRenderingOption === 'MathJax' || this.config.usePandocParser) {
-      const inline = this.config.mathInlineDelimiters
-      const block = this.config.mathBlockDelimiters
 
       // TODO
       const mathJaxConfig = await utility.getMathJaxConfig()
