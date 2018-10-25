@@ -26,6 +26,7 @@ import useMarkdownItCriticMarkup from "./custom-markdown-it-features/critic-mark
 import useMarkdownItEmoji from "./custom-markdown-it-features/emoji";
 import useMarkdownItMath from "./custom-markdown-it-features/math";
 import useMarkdownItVideo from "./custom-markdown-it-features/video";
+import useMarkdownItKbd from "./custom-markdown-it-features/kbd";
 import useMarkdownItWikilink from "./custom-markdown-it-features/wikilink";
 
 import enhanceWithCodeBlockStyling from "./render-enhancers/code-block-styling";
@@ -292,6 +293,7 @@ export class MarkdownEngine {
     useMarkdownItEmoji(this.md, this.config);
     useMarkdownItMath(this.md, this.config);
     useMarkdownItVideo(this.md, this.config);
+    useMarkdownItKbd(this.md, this.config);
     useMarkdownItWikilink(this.md, this.config);
   }
 
