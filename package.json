@@ -1,6 +1,6 @@
 {
   "name": "@shd101wyy/mume",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "description": "A powerful markdown tool",
   "main": "out/src/mume.js",
   "typings": "out/src/mume.d.ts",
@@ -32,9 +32,9 @@
   "dependencies": {
     "babyparse": "^0.4.6",
     "cheerio": "^1.0.0-rc.2",
-    "fs-extra": "^5.0.0",
-    "gray-matter": "^3.0.7",
-    "less": "^2.7.2",
+    "fs-extra": "^7.0.1",
+    "gray-matter": "^4.0.1",
+    "less": "^3.9.0",
     "lodash": "^4.17.5",
     "markdown-it-container": "^2.0.0",
     "markdown-it-kbd": "^1.1.1",
@@ -43,7 +43,7 @@
     "node-fetch": "^2.1.2",
     "qiniu": "=7.1.1",
     "request": "^2.81.0",
-    "temp": "^0.8.3",
+    "temp": "^0.9.0",
     "twemoji": "^11.0.1",
     "uslug": "^1.0.4",
     "yamljs": "^0.3.0"
@@ -61,6 +61,6 @@
     "ts-jest": "^22.0.2",
     "tslint": "^5.9.1",
     "tslint-config-prettier": "^1.8.0",
-    "typescript": "2.8"
+    "typescript": "3.0"
   }
 }

@@ -193,6 +193,7 @@ export class MarkdownEngine {
 
   private breakOnSingleNewLine: boolean;
   private enableTypographer: boolean;
+  private enableLinkify: boolean;
   private protocolsWhiteListRegExp: RegExp;
 
   private headings: HeadingData[];
@@ -248,6 +249,7 @@ export class MarkdownEngine {
       ...defaults,
       typographer: this.enableTypographer,
       breaks: this.breakOnSingleNewLine,
+      linkify: this.enableLinkify,
     });
 
     // markdown-it extensions
@@ -321,6 +323,9 @@ export class MarkdownEngine {
     // enable typographer
     this.enableTypographer = this.config.enableTypographer;
 
+    // enable linkify
+    this.enableLinkify = this.config.enableLinkify;
+
     // protocal whitelist
     const protocolsWhiteList = (
       this.config.protocolsWhiteList ||
@@ -340,6 +345,7 @@ export class MarkdownEngine {
     this.md.set({
       breaks: this.breakOnSingleNewLine,
       typographer: this.enableTypographer,
+      linkify: this.enableLinkify,
     });
   }
 
@@ -1066,9 +1072,9 @@ if (typeof(window['Reveal']) !== 'undefined') {
           `./dependencies/vega-embed/vega-embed.js`,
         )}" charset="UTF-8"></script>`;
       } else {
-        vegaScript += `<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vega/4.1.0/vega.min.js"></script>`;
-        vegaScript += `<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vega-lite/2.6.0/vega-lite.min.js"></script>`;
-        vegaScript += `<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vega-embed/3.18.1/vega-embed.min.js"></script>`;
+        vegaScript += `<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vega/4.4.0/vega.min.js"></script>`;
+        vegaScript += `<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vega-lite/3.0.0-rc10/vega-lite.min.js"></script>`;
+        vegaScript += `<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vega-embed/3.26.1/vega-embed.min.js"></script>`;
       }
       vegaInitScript += `<script>
       var vegaEls = document.querySelectorAll('.vega, .vega-lite');
