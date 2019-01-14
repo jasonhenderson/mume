@@ -37,7 +37,7 @@
     "less": "^3.9.0",
     "lodash": "^4.17.5",
     "markdown-it-container": "^2.0.0",
-    "markdown-it-kbd": "^1.1.1",
+    "markdown-it-kbd": "^2.0.0",
     "markdown-it-video": "github:jasonhenderson/markdown-it-video",
     "mkdirp": "^0.5.1",
     "node-fetch": "^2.1.2",
