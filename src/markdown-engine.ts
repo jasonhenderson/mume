@@ -26,7 +26,7 @@ import useMarkdownItCriticMarkup from "./custom-markdown-it-features/critic-mark
 import useMarkdownItEmoji from "./custom-markdown-it-features/emoji";
 import useMarkdownItMath from "./custom-markdown-it-features/math";
 import useMarkdownItVideo from "./custom-markdown-it-features/video";
-import useMarkdownItKbd from "./custom-markdown-it-features/kbd";
+//import useMarkdownItKbd from "./custom-markdown-it-features/kbd";
 import useMarkdownItWikilink from "./custom-markdown-it-features/wikilink";
 
 import enhanceWithCodeBlockStyling from "./render-enhancers/code-block-styling";
