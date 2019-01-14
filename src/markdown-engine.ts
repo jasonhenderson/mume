@@ -295,7 +295,7 @@ export class MarkdownEngine {
     useMarkdownItEmoji(this.md, this.config);
     useMarkdownItMath(this.md, this.config);
     useMarkdownItVideo(this.md, this.config);
-    useMarkdownItKbd(this.md, this.config);
+    //useMarkdownItKbd(this.md, this.config);
     useMarkdownItWikilink(this.md, this.config);
   }
 
