@@ -36,6 +36,7 @@
     "gray-matter": "^4.0.1",
     "less": "^3.9.0",
     "lodash": "^4.17.5",
+    "markdown-it-attrs": "^2.3.2",
     "markdown-it-container": "^2.0.0",
     "markdown-it-kbd": "^2.0.0",
     "markdown-it-video": "github:jasonhenderson/markdown-it-video",
