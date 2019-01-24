@@ -6,6 +6,6 @@ const MarkdownItAttrs = require("markdown-it-attrs");
 export default (md: MarkdownIt, config: MarkdownEngineConfig) => {
   md.use(MarkdownItAttrs);
 
-  md.renderer.rules.attrs = tokenizeVideoLink(theMd, theOptions);
-  md.inline.ruler.before('emphasis', 'videoLink', videoEmbed(theMd, 'videoLink', theOptions))
+  // md.renderer.rules.attrs = tokenizeVideoLink(theMd, theOptions);
+  // md.inline.ruler.before('emphasis', 'videoLink', videoEmbed(theMd, 'videoLink', theOptions))
 };
