@@ -26,11 +26,10 @@ import useMarkdownItCriticMarkup from "./custom-markdown-it-features/critic-mark
 import useMarkdownItEmoji from "./custom-markdown-it-features/emoji";
 import useMarkdownItMath from "./custom-markdown-it-features/math";
 import useMarkdownItVideo from "./custom-markdown-it-features/video";
-import useMarkdownItTarget from "./custom-markdown-it-features/target";
-// TODO: conform to mume customization
-//import useMarkdownItAttrs from "./custom-markdown-it-features/attrs";
-//import useMarkdownItKbd from "./custom-markdown-it-features/kbd";
 import useMarkdownItWikilink from "./custom-markdown-it-features/wikilink";
+import useMarkdownItAttrs from "./custom-markdown-it-features/attrs";
+import useMarkdownItKbd from "./custom-markdown-it-features/kbd";
+import useMarkdownItTarget from "./custom-markdown-it-features/target";
 
 import enhanceWithCodeBlockStyling from "./render-enhancers/code-block-styling";
 import enhanceWithEmbeddedLocalImages from "./render-enhancers/embedded-local-images";
@@ -298,9 +297,9 @@ export class MarkdownEngine {
     useMarkdownItEmoji(this.md, this.config);
     useMarkdownItMath(this.md, this.config);
     useMarkdownItVideo(this.md, this.config);
+    useMarkdownItKbd(this.md, this.config);
     useMarkdownItTarget(this.md, this.config);
-    //useMarkdownItAttrs(this.md, this.config);
-    //useMarkdownItKbd(this.md, this.config);
+    useMarkdownItAttrs(this.md, this.config);
     useMarkdownItWikilink(this.md, this.config);
   }
 
