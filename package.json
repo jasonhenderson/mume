@@ -38,6 +38,7 @@
     "lodash": "^4.17.5",
     "markdown-it-attrs": "^2.3.2",
     "markdown-it-container": "^2.0.0",
+    "markdown-it-for-inline": "^0.1.1",
     "markdown-it-kbd": "^2.0.0",
     "markdown-it-video": "github:jasonhenderson/markdown-it-video",
     "mkdirp": "^0.5.1",
