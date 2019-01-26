@@ -173,6 +173,33 @@ export function openFile(filePath: string) {
   }
 }
 
+export function Function(...args: string[]) {
+  let body = "";
+  const paramLists: string[] = [];
+  if (args.length) {
+    body = arguments[args.length - 1];
+    for (let i = 0; i < args.length - 1; i++) {
+      paramLists.push(args[i]);
+    }
+  }
+
+  const params = [];
+  for (let j = 0, len = paramLists.length; j < len; j++) {
+    let paramList: any = paramLists[j];
+    if (typeof paramList === "string") {
+      paramList = paramList.split(/\s*,\s*/);
+    }
+    params.push.apply(params, paramList);
+  }
+
+  return vm.runInThisContext(`
+    (function(${params.join(", ")}) {
+      ${body}
+    })
+  `);
+}
+Function.prototype = global.Function.prototype;
+
 /**
  * get "~/.mume" path
  */
@@ -576,29 +603,3 @@ export async function allowUnsafeEvalAndUnsafeNewFunctionAsync(
   }
 }
 
-export function Function(...args: string[]) {
-  let body = "";
-  const paramLists: string[] = [];
-  if (args.length) {
-    body = arguments[args.length - 1];
-    for (let i = 0; i < args.length - 1; i++) {
-      paramLists.push(args[i]);
-    }
-  }
-
-  const params = [];
-  for (let j = 0, len = paramLists.length; j < len; j++) {
-    let paramList: any = paramLists[j];
-    if (typeof paramList === "string") {
-      paramList = paramList.split(/\s*,\s*/);
-    }
-    params.push.apply(params, paramList);
-  }
-
-  return vm.runInThisContext(`
-    (function(${params.join(", ")}) {
-      ${body}
-    })
-  `);
-}
-Function.prototype = global.Function.prototype;

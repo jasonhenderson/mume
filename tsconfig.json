@@ -5,7 +5,7 @@
     "sourceMap": true,
     "skipLibCheck": true,
     "outDir": "out",
-    "lib": ["es6", "dom", "es2015"],
+    "lib": ["es6", "dom"],
     "rootDir": ".",
     "declaration": true,
     "noUnusedLocals": true

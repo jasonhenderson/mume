@@ -1,7 +1,7 @@
 // tslint:disable-next-line no-implicit-dependencies
 import { MarkdownIt } from "markdown-it";
 import { MarkdownEngineConfig } from "../markdown-engine-config";
-let MarkdownItAttrs = require("markdown-it-attrs");
+const MarkdownItAttrs = require("markdown-it-attrs");
 
 export default (md: MarkdownIt, config: MarkdownEngineConfig) => {
   md.use(MarkdownItAttrs);
