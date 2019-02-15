@@ -3058,7 +3058,7 @@ sidebarTOCBtn.addEventListener('click', function(event) {
     // check list item attribtues
     // issue: https://github.com/shd101wyy/markdown-preview-enhanced/issues/559
     const $ = cheerio.load(output);
-    $("li, code").each((j, elem) => {
+    $("li, p").each((j, elem) => {
       const $elem = $(elem);
       const html2 = $elem.html().trim();
       const attributeMatch = html2.match(/<!--(.+?)-->/);
