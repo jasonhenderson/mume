@@ -30,6 +30,8 @@ import useMarkdownItWikilink from "./custom-markdown-it-features/wikilink";
 import useMarkdownItAttrs from "./custom-markdown-it-features/attrs";
 import useMarkdownItKbd from "./custom-markdown-it-features/kbd";
 import useMarkdownItTarget from "./custom-markdown-it-features/target";
+import useMarkdownItSpoiler from "./custom-markdown-it-features/spoiler";
+import useMarkdownItReveal from "./custom-markdown-it-features/reveal";
 
 import enhanceWithCodeBlockStyling from "./render-enhancers/code-block-styling";
 import enhanceWithEmbeddedLocalImages from "./render-enhancers/embedded-local-images";
@@ -295,10 +297,12 @@ export class MarkdownEngine {
     useMarkdownItCodeFences(this.md, this.config);
     useMarkdownItCriticMarkup(this.md, this.config);
     useMarkdownItEmoji(this.md, this.config);
+    useMarkdownItKbd(this.md, this.config);
     useMarkdownItMath(this.md, this.config);
     useMarkdownItVideo(this.md, this.config);
-    useMarkdownItKbd(this.md, this.config);
+    useMarkdownItReveal(this.md, this.config);
     useMarkdownItTarget(this.md, this.config);
+    useMarkdownItSpoiler(this.md, this.config);
     useMarkdownItAttrs(this.md, this.config);
     useMarkdownItWikilink(this.md, this.config);
   }
@@ -3054,16 +3058,22 @@ sidebarTOCBtn.addEventListener('click', function(event) {
     // check list item attribtues
     // issue: https://github.com/shd101wyy/markdown-preview-enhanced/issues/559
     const $ = cheerio.load(output);
-    $("li").each((j, elem) => {
+    $("li, pre").each((j, elem) => {
       const $elem = $(elem);
       const html2 = $elem.html().trim();
       const attributeMatch = html2.match(/<!--(.+?)-->/);
       if (attributeMatch) {
-        const attributes = attributeMatch[1].replace(/\.element\:/, "").trim();
-        const attrObj = parseAttributes(attributes);
-        for (const key in attrObj) {
-          if (attrObj.hasOwnProperty(key)) {
-            $elem.attr(key, attrObj[key]);
+        const index = attributeMatch[1].replace(/\.click\:/, "").trim();
+        if (index) {
+          $elem.attr("class", "fragment");
+          $elem.attr("data-fragment-index", index);
+        } else {
+          const attributes = attributeMatch[1].replace(/\.element\:/, "").trim();
+          const attrObj = parseAttributes(attributes);
+          for (const key in attrObj) {
+            if (attrObj.hasOwnProperty(key)) {
+              $elem.attr(key, attrObj[key]);
+            }
           }
         }
       }
