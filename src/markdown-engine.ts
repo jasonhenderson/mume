@@ -1220,7 +1220,7 @@ for (var i = 0; i < flowcharts.length; i++) {
             async: true,
           });
         } else {
-          dependencies.push({ src: "/slides/notes.js", async: true }); // TODO: copy notes.js file to corresponding folder
+          dependencies.push({ src: "/reveal/plugin/notes/notes.js", async: true }); // TODO: copy notes.js file to corresponding folder
         }
       }
       presentationConfig["dependencies"] = dependencies;
@@ -1698,7 +1698,7 @@ for (var i = 0; i < flowcharts.length; i++) {
             async: true
           })
         else
-          dependencies.push({src: '/slides/notes.js', async: true}) // TODO: copy notes.js file to corresponding folder
+          dependencies.push({src: '/reveal/plugin/notes/notes.js', async: true}) // TODO: copy notes.js file to corresponding folder
       }
       presentationConfig['dependencies'] = dependencies
 
@@ -1969,9 +1969,9 @@ sidebarTOCBtn.addEventListener('click', function(event) {
     // copy dependency files
     if (
       !offline &&
-      html.indexOf('[{"src":"/slides/notes.js","async":true}]') >= 0
+      html.indexOf('[{"src":"/reveal/plugin/notes/notes.js","async":true}]') >= 0
     ) {
-      const depsDirName = path.resolve(path.dirname(dest), "/slides");
+      const depsDirName = path.resolve(path.dirname(dest), "/reveal/plugin/notes");
       if (!fs.existsSync(depsDirName)) {
         fs.mkdirSync(depsDirName);
       }
@@ -2026,7 +2026,7 @@ sidebarTOCBtn.addEventListener('click', function(event) {
 
     // presentation speaker notes
     // copy dependency files
-    if (!offline && html.indexOf('[{"src":"/slides/notes.js","async":true}]') >= 0) {
+    if (!offline && html.indexOf('[{"src":"/reveal/plugin/notes/notes.js","async":true}]') >= 0) {
 
       const notesJs = await utility.readFile(path.resolve(extensionDirectoryPath, './dependencies/reveal/plugin/notes/notes.js'), 'utf8')
       files["notesJs"] = notesJs.trim()
@@ -2072,7 +2072,7 @@ sidebarTOCBtn.addEventListener('click', function(event) {
 
     // presentation speaker notes
     // copy dependency files
-    if (!offline && html.indexOf('[{"src":"/slides/notes.js","async":true}]') >= 0) {
+    if (!offline && html.indexOf('[{"src":"/reveal/plugin/notes/notes.js","async":true}]') >= 0) {
       parts["notes"] = true
     }
     else {
@@ -3058,7 +3058,7 @@ sidebarTOCBtn.addEventListener('click', function(event) {
     // check list item attribtues
     // issue: https://github.com/shd101wyy/markdown-preview-enhanced/issues/559
     const $ = cheerio.load(output);
-    $("li, pre").each((j, elem) => {
+    $("li, code").each((j, elem) => {
       const $elem = $(elem);
       const html2 = $elem.html().trim();
       const attributeMatch = html2.match(/<!--(.+?)-->/);
