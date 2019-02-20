@@ -31,7 +31,7 @@ import useMarkdownItAttrs from "./custom-markdown-it-features/attrs";
 import useMarkdownItKbd from "./custom-markdown-it-features/kbd";
 import useMarkdownItTarget from "./custom-markdown-it-features/target";
 import useMarkdownItSpoiler from "./custom-markdown-it-features/spoiler";
-import useMarkdownItReveal from "./custom-markdown-it-features/reveal";
+// import useMarkdownItReveal from "./custom-markdown-it-features/reveal";
 
 import enhanceWithCodeBlockStyling from "./render-enhancers/code-block-styling";
 import enhanceWithEmbeddedLocalImages from "./render-enhancers/embedded-local-images";
@@ -297,10 +297,10 @@ export class MarkdownEngine {
     useMarkdownItCodeFences(this.md, this.config);
     useMarkdownItCriticMarkup(this.md, this.config);
     useMarkdownItEmoji(this.md, this.config);
-    useMarkdownItKbd(this.md, this.config);
     useMarkdownItMath(this.md, this.config);
     useMarkdownItVideo(this.md, this.config);
-    useMarkdownItReveal(this.md, this.config);
+    useMarkdownItKbd(this.md, this.config);
+    // useMarkdownItReveal(this.md, this.config);
     useMarkdownItTarget(this.md, this.config);
     useMarkdownItSpoiler(this.md, this.config);
     useMarkdownItAttrs(this.md, this.config);
@@ -2485,6 +2485,8 @@ sidebarTOCBtn.addEventListener('click', function(event) {
     let outputHTML = $.html().replace(/^<div>(.+)<\/div>$/, "$1");
     let results = await Promise.all(asyncFunctions);
     results = results.sort((a, b) => a["offset"] - b["offset"]);
+
+    console.log(outputHTML);
 
     /* tslint:disable-next-line:no-shadowed-variable */
     results.forEach(({ heading, id, level, filePath, html }) => {
