@@ -19,7 +19,7 @@ import * as utility from "./utility";
  */
 function processMath(
   text: string,
-  { mathInlineDelimiters, mathBlockDelimiters },
+  { mathInlineDelimiters, mathBlockDelimiters, mathRenderingOnlineService },
 ): string {
   let line = text.replace(/\\\$/g, "#slash_dollarsign#");
 
@@ -72,7 +72,7 @@ function processMath(
       let math = $2;
       math = math.replace(/\n/g, "").replace(/\#slash\_dollarsign\#/g, "\\$");
       math = utility.escapeString(math);
-      return `<p align="center"><img src=\"https://latex.codecogs.com/gif.latex?${math
+      return `<p align="center"><img src=\"${mathRenderingOnlineService}?${math
         .trim()
         .replace(/ /g, "%20")}\"/></p>  \n`;
     },
@@ -91,7 +91,7 @@ function processMath(
       let math = $2;
       math = math.replace(/\n/g, "").replace(/\#slash\_dollarsign\#/g, "\\$");
       math = utility.escapeString(math);
-      return `<img src=\"https://latex.codecogs.com/gif.latex?${math
+      return `<img src=\"${mathRenderingOnlineService}?${math
         .trim()
         .replace(/ /g, "%20")}\"/>`;
     },
@@ -179,21 +179,27 @@ export async function markdownConvert(
     fileDirectoryPath,
     protocolsWhiteListRegExp,
     filesCache,
+    mathRenderingOption,
     mathInlineDelimiters,
     mathBlockDelimiters,
+    mathRenderingOnlineService,
     codeChunksData,
     graphsCache,
     usePandocParser,
+    imageMagickPath,
   }: {
     projectDirectoryPath: string;
     fileDirectoryPath: string;
     protocolsWhiteListRegExp: RegExp;
     filesCache: { [key: string]: string };
+    mathRenderingOption: string;
     mathInlineDelimiters: string[][];
     mathBlockDelimiters: string[][];
+    mathRenderingOnlineService: string;
     codeChunksData: { [key: string]: CodeChunkData };
     graphsCache: { [key: string]: string };
     usePandocParser: boolean;
+    imageMagickPath: string;
   },
   config: object,
 ): Promise<string> {
@@ -254,13 +260,13 @@ export async function markdownConvert(
       ordered: false,
       depthFrom: 1,
       depthTo: 6,
-      tab: "\t",
+      tab: "  ",
     });
     text = text.replace(/^\s*\[MUMETOC\]\s*/gm, "\n\n" + tocMarkdown + "\n\n");
   }
 
   // change link path to project '/' path
-  // this is actually differnet from pandoc-convert.coffee
+  // this is actually different from pandoc-convert.coffee
   text = processPaths(
     text,
     fileDirectoryPath,
@@ -269,7 +275,14 @@ export async function markdownConvert(
     protocolsWhiteListRegExp,
   );
 
-  text = processMath(text, { mathInlineDelimiters, mathBlockDelimiters });
+  text =
+    mathRenderingOption !== "None"
+      ? processMath(text, {
+          mathInlineDelimiters,
+          mathBlockDelimiters,
+          mathRenderingOnlineService,
+        })
+      : text;
 
   return await new Promise<string>((resolve, reject) => {
     mkdirp(imageDirectoryPath, (error, made) => {
@@ -285,6 +298,7 @@ export async function markdownConvert(
         useRelativeFilePath,
         codeChunksData,
         graphsCache,
+        imageMagickPath,
       }).then(({ outputString }) => {
         outputString = data.frontMatterString + outputString; // put the front-matter back.
 

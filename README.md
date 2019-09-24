@@ -43,9 +43,6 @@ async function main() {
   // chrome (puppeteer) export
   await engine.chromeExport({ fileType: "pdf", runAllCodeChunks: true }); // fileType = 'pdf'|'png'|'jpeg'
 
-  // phantomjs export
-  await engine.phantomjsExport({ fileType: "pdf", runAllCodeChunks: true }); // fileType = 'pdf'|'png'|'jpeg'
-
   // prince export
   await engine.princeExport({ runAllCodeChunks: true });
 
@@ -84,6 +81,7 @@ const config = {
   mathRenderingOption: "KaTeX",  // "KaTeX" | "MathJax" | "None"
   mathInlineDelimiters: [["$", "$"], ["\\(", "\\)"]],
   mathBlockDelimiters: [["$$", "$$"], ["\\[", "\\]"]],
+  mathRenderingOnLineService: "https://latex.codecogs.com/gif.latex", // "https://latex.codecogs.com/svg.latex", "https://latex.codecogs.com/png.latex"
 
   // Enable Wiki Link syntax support. More information can be found a  https://help.github.com/articles/adding-links-to-wikis/
   enableWikiLinkSyntax: true,
@@ -176,8 +174,11 @@ const config = {
   // Whether to print background for file export or not. If set to `false`, then `github-light` preview theme will b  used. You can also set `print_background` in front-matter for individual files.
   printBackground: false,
 
-  // PhantomJS executable path
-  phantomPath: 'phantomjs',
+  // Chrome executable path, which is used for Puppeteer export. Leaving it empty means the path will be found automatically.
+  chromePath: '',
+
+  // ImageMagick command line path. Should be either `magick` or `convert`. Leaving it empty means the path will be found automatically.
+  imageMagickPath: '',
 
   // Pandoc executable path
   pandocPath: 'pandoc',
@@ -194,7 +195,32 @@ const config = {
   // Enables executing code chunks and importing javascript files.
   // ⚠ ️ Please use this feature with caution because it may put your security at risk!
   //    Your machine can get hacked if someone makes you open a markdown with malicious code while script execution is enabled.
-  enableScriptExecution: false
+  enableScriptExecution: false,
+
+  // Enables transform audio video link to to html5 embed audio video tags.
+  // Internally it enables markdown-it-html5-embed plugins.
+  enableHTML5Embed: false,
+
+  // Enables video/audio embed with ![]() syntax (default).
+  HTML5EmbedUseImageSyntax: true,
+
+  // Enables video/audio embed with []() syntax.
+  HTML5EmbedUseLinkSyntax: false,
+
+  // When true embed media with http:// schema in URLs. When false ignore and don't embed them.
+  HTML5EmbedIsAllowedHttp: false,
+
+  // HTML attributes to pass to audio tags.
+  HTML5EmbedAudioAttributes: 'controls preload="metadata" width="320"',
+
+  // HTML attributes to pass to video tags.
+  HTML5EmbedVideoAttributes: 'controls preload="metadata" width="320" height="240"',
+
+  // Puppeteer waits for a certain timeout in milliseconds before the document export.
+  puppeteerWaitForTimeout: 0
+
+  // If set to true, then locally installed puppeteer-core will be required. Otherwise, the puppeteer globally installed by `npm install -g puppeteer` will be required.
+  usePuppeteerCore: true
 }
 
 // Init Engine
@@ -211,7 +237,8 @@ Global config files are located at `~/.mume` directory
 
 ## Development
 
-[Visual Studio Code](https://code.visualstudio.com/) is recommended.
+[Visual Studio Code](https://code.visualstudio.com/) is recommended.  
+Recommended to use Node.js version `lts/dubnium`.
 
 1.  Clone this project
 2.  Run `npm install` from shell

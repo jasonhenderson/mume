@@ -14,6 +14,7 @@ export interface MarkdownEngineConfig {
   mathRenderingOption?: MathRenderingOption;
   mathInlineDelimiters?: string[][];
   mathBlockDelimiters?: string[][];
+  mathRenderingOnlineService?: string;
   codeBlockTheme?: string;
   previewTheme?: string;
   revealjsTheme?: string;
@@ -21,12 +22,21 @@ export interface MarkdownEngineConfig {
   frontMatterRenderingOption?: string;
   imageFolderPath?: string;
   printBackground?: boolean;
-  phantomPath?: string;
+  chromePath?: string;
+  imageMagickPath?: string;
   pandocPath?: string;
   pandocMarkdownFlavor?: string;
   pandocArguments?: string[];
   latexEngine?: string;
   enableScriptExecution?: boolean;
+  enableHTML5Embed?: boolean;
+  HTML5EmbedUseImageSyntax?: boolean;
+  HTML5EmbedUseLinkSyntax?: boolean;
+  HTML5EmbedIsAllowedHttp?: boolean;
+  HTML5EmbedAudioAttributes?: string;
+  HTML5EmbedVideoAttributes?: string;
+  puppeteerWaitForTimeout?: number;
+  usePuppeteerCore?: boolean;
 }
 
 export const defaultMarkdownEngineConfig: MarkdownEngineConfig = {
@@ -43,6 +53,7 @@ export const defaultMarkdownEngineConfig: MarkdownEngineConfig = {
   mathRenderingOption: "KaTeX",
   mathInlineDelimiters: [["$", "$"], ["\\(", "\\)"]],
   mathBlockDelimiters: [["$$", "$$"], ["\\[", "\\]"]],
+  mathRenderingOnlineService: "https://latex.codecogs.com/gif.latex",
   codeBlockTheme: "auto.css",
   previewTheme: "github-light.css",
   revealjsTheme: "white.css",
@@ -50,10 +61,19 @@ export const defaultMarkdownEngineConfig: MarkdownEngineConfig = {
   frontMatterRenderingOption: "none",
   imageFolderPath: "/assets",
   printBackground: false,
-  phantomPath: "phantomjs",
+  chromePath: "",
+  imageMagickPath: "",
   pandocPath: "pandoc",
   pandocMarkdownFlavor: "markdown-raw_tex+tex_math_single_backslash",
   pandocArguments: [],
   latexEngine: "pdflatex",
   enableScriptExecution: false,
+  enableHTML5Embed: false,
+  HTML5EmbedUseImageSyntax: true,
+  HTML5EmbedUseLinkSyntax: false,
+  HTML5EmbedIsAllowedHttp: false,
+  HTML5EmbedAudioAttributes: 'controls preload="metadata"',
+  HTML5EmbedVideoAttributes: 'controls preload="metadata"',
+  puppeteerWaitForTimeout: 0,
+  usePuppeteerCore: true,
 };

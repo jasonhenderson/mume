@@ -1,4 +1,4 @@
-import * as uslug from "uslug";
+import HeadingIdGenerator from "./heading-id-generator";
 
 function nPrefix(str, n) {
   let output = "";
@@ -52,7 +52,7 @@ function sanitizeContent(content) {
  *  ordered: boolean
  *  depthFrom: number, default 1
  *  depthTo: number, default 6
- *  tab: string, default `\t`
+ *  tab: string, default `  `
  */
 export interface TocOption {
   ordered: boolean;
@@ -72,6 +72,7 @@ export function toc(
   tokens: Array<{ content: string; level: number; id?: string }>,
   opt: TocOption,
 ) {
+  const headingIdGenerator = new HeadingIdGenerator();
   if (!tokens) {
     return { content: "", array: [] };
   }
@@ -79,7 +80,7 @@ export function toc(
   const ordered = opt.ordered;
   const depthFrom = opt.depthFrom || 1;
   const depthTo = opt.depthTo || 6;
-  let tab = opt.tab || "\t";
+  let tab = opt.tab || "  ";
   const ignoreLink = opt.ignoreLink || false;
 
   if (ordered) {
@@ -95,7 +96,6 @@ export function toc(
   }
 
   const outputArr = [];
-  const tocTable = {};
   let smallestLevel = tokens[0].level;
 
   // get smallestLevel
@@ -107,17 +107,9 @@ export function toc(
 
   let orderedListNums = [];
   for (const token of tokens) {
-    const content = token.content;
+    const content = token.content.trim();
     const level = token.level;
-    let slug = token.id || uslug(content);
-
-    if (tocTable[slug] >= 0) {
-      tocTable[slug] += 1;
-      slug += "-" + tocTable[slug];
-    } else {
-      tocTable[slug] = 0;
-    }
-
+    const slug = token.id || headingIdGenerator.generateId(content);
     const n = level - smallestLevel;
     let numStr = "1";
     if (ordered) {
@@ -134,7 +126,7 @@ export function toc(
       }
       numStr = orderedListNums[orderedListNums.length - 1];
     }
-    const listItem = `${nPrefix(tab, n)}${ordered ? `${numStr}.` : "*"} ${
+    const listItem = `${nPrefix(tab, n)}${ordered ? `${numStr}.` : "-"} ${
       ignoreLink
         ? sanitizeContent(content)
         : `[${sanitizeContent(content)}](#${slug})`

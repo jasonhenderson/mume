@@ -1,6 +1,9 @@
 import { spawn } from "child_process";
 import * as path from "path";
-import { extensionDirectoryPath } from "./utility";
+import {
+  extensionConfigDirectoryPath,
+  extensionDirectoryPath,
+} from "./utility";
 
 const PlantUMLJarPath = path.resolve(
   extensionDirectoryPath,
@@ -47,7 +50,10 @@ class PlantUMLTask {
   private startTask() {
     this.task = spawn("java", [
       "-Djava.awt.headless=true",
-      "-Dplantuml.include.path=" + this.fileDirectoryPath,
+      "-Dplantuml.include.path=" +
+        [this.fileDirectoryPath, extensionConfigDirectoryPath].join(
+          path.delimiter,
+        ),
       "-jar",
       PlantUMLJarPath,
       // '-graphvizdot', 'exe'
@@ -58,22 +64,24 @@ class PlantUMLTask {
     ]);
 
     this.task.stdout.on("data", (chunk) => {
-      let data = chunk.toString().trimRight(); // `trimRight()` here is necessary.
-      if (data.endsWith("</svg>")) {
-        data = this.chunks + data;
+      let data = chunk.toString();
+      this.chunks += data;
+      if (
+        this.chunks.trimRight().endsWith("</svg>") &&
+        this.chunks.match(/<svg/g).length ===
+          this.chunks.match(/<\/svg>/g).length
+      ) {
+        data = this.chunks;
         this.chunks = ""; // clear CHUNKS
-
-        const diagrams = data.split("</svg>");
+        const diagrams = data.split("<?xml ");
         diagrams.forEach((diagram, i) => {
           if (diagram.length) {
             const callback = this.callbacks.shift();
             if (callback) {
-              callback(diagram + "</svg>");
+              callback("<?xml " + diagram);
             }
           }
         });
-      } else {
-        this.chunks += data;
       }
     });
 

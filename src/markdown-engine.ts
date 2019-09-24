@@ -5,11 +5,12 @@ import { execFile } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 import * as request from "request";
-import { VFile } from "vfile";
+import * as slash from "slash";
 import * as YAML from "yamljs";
 
 import { CodeChunkData } from "./code-chunk-data";
 import { ebookConvert } from "./ebook-convert";
+import HeadingIdGenerator from "./heading-id-generator";
 import { markdownConvert } from "./markdown-convert";
 import {
   defaultMarkdownEngineConfig,
@@ -24,6 +25,7 @@ import * as utility from "./utility";
 import useMarkdownItCodeFences from "./custom-markdown-it-features/code-fences";
 import useMarkdownItCriticMarkup from "./custom-markdown-it-features/critic-markup";
 import useMarkdownItEmoji from "./custom-markdown-it-features/emoji";
+import useMarkdownItHTML5Embed from "./custom-markdown-it-features/html5-embed";
 import useMarkdownItMath from "./custom-markdown-it-features/math";
 import useMarkdownItVideo from "./custom-markdown-it-features/video";
 import useMarkdownItWikilink from "./custom-markdown-it-features/wikilink";
@@ -60,13 +62,6 @@ const CryptoJS = require(path.resolve(
   extensionDirectoryPath,
   "./dependencies/crypto-js/crypto-js.js",
 ));
-const pdf = require(path.resolve(
-  extensionDirectoryPath,
-  "./dependencies/node-html-pdf/index.js",
-));
-
-// Puppeteer
-let puppeteer = null;
 
 export interface MarkdownEngineRenderOption {
   useRelativeFilePath: boolean;
@@ -75,6 +70,7 @@ export interface MarkdownEngineRenderOption {
   triggeredBySave?: boolean;
   runAllCodeChunks?: boolean;
   emojiToSvg?: boolean;
+  isForVSCodePreview?: boolean;
 }
 
 export interface MarkdownEngineOutput {
@@ -100,11 +96,6 @@ export interface HTMLTemplateOption {
    * whether is for prince export.
    */
   isForPrince: boolean;
-  /**
-   * if it's for phantomjs export, what is the export file type.
-   * `pdf`, `jpeg`, and `png` are available.
-   */
-  phantomjsType?: string;
   /**
    * whether for offline use
    */
@@ -135,7 +126,20 @@ let MODIFY_SOURCE: (
   filePath: string,
 ) => Promise<string> = null;
 
-let UPDATE_LINTING_REPORT: (vFiles: Array<VFile<{}>>) => void = null;
+const dependentLibraryMaterials = [
+  {
+    key: "vega",
+    version: "5.4.0",
+  },
+  {
+    key: "vega-lite",
+    version: "3.3.0",
+  },
+  {
+    key: "vega-embed",
+    version: "4.2.0",
+  },
+];
 
 /**
  * The markdown engine that can be used to parse markdown and export files
@@ -175,16 +179,6 @@ export class MarkdownEngine {
     MODIFY_SOURCE = cb;
   }
 
-  public static async updateLintingReport(vFiles: Array<VFile<{}>>) {
-    if (UPDATE_LINTING_REPORT) {
-      await UPDATE_LINTING_REPORT(vFiles);
-    }
-  }
-
-  public static onUpdateLintingReport(cb: (vFiles: Array<VFile<{}>>) => void) {
-    UPDATE_LINTING_REPORT = cb;
-  }
-
   /**
    * markdown file path
    */
@@ -204,6 +198,11 @@ export class MarkdownEngine {
   private tocHTML: string;
 
   private md;
+
+  /**
+   * Dirty variable just made for VSCode preview.
+   */
+  private isForVSCodePreview: boolean;
 
   // caches
   private graphsCache: { [key: string]: string } = {};
@@ -257,46 +256,25 @@ export class MarkdownEngine {
     });
 
     // markdown-it extensions
-    this.md.use(
-      require(path.resolve(
-        extensionDirectoryPath,
-        "./dependencies/markdown-it/extensions/markdown-it-footnote.min.js",
-      )),
-    );
-    this.md.use(
-      require(path.resolve(
-        extensionDirectoryPath,
-        "./dependencies/markdown-it/extensions/markdown-it-sub.min.js",
-      )),
-    );
-    this.md.use(
-      require(path.resolve(
-        extensionDirectoryPath,
-        "./dependencies/markdown-it/extensions/markdown-it-sup.min.js",
-      )),
-    );
-    this.md.use(
-      require(path.resolve(
-        extensionDirectoryPath,
-        "./dependencies/markdown-it/extensions/markdown-it-deflist.min.js",
-      )),
-    );
-    this.md.use(
-      require(path.resolve(
-        extensionDirectoryPath,
-        "./dependencies/markdown-it/extensions/markdown-it-abbr.min.js",
-      )),
-    );
-    this.md.use(
-      require(path.resolve(
-        extensionDirectoryPath,
-        "./dependencies/markdown-it/extensions/markdown-it-mark.min.js",
-      )),
-    );
+    const extensions = [
+      "./dependencies/markdown-it/extensions/markdown-it-footnote.min.js",
+      "./dependencies/markdown-it/extensions/markdown-it-sub.min.js",
+      "./dependencies/markdown-it/extensions/markdown-it-sup.min.js",
+      "./dependencies/markdown-it/extensions/markdown-it-deflist.min.js",
+      "./dependencies/markdown-it/extensions/markdown-it-abbr.min.js",
+      "./dependencies/markdown-it/extensions/markdown-it-mark.min.js",
+    ];
+
+    for (const js of extensions) {
+      const fullPath = path.resolve(extensionDirectoryPath, js);
+      const plugin = require(fullPath);
+      this.md.use(plugin);
+    }
 
     useMarkdownItCodeFences(this.md, this.config);
     useMarkdownItCriticMarkup(this.md, this.config);
     useMarkdownItEmoji(this.md, this.config);
+    useMarkdownItHTML5Embed(this.md, this.config);
     useMarkdownItMath(this.md, this.config);
     useMarkdownItVideo(this.md, this.config);
     useMarkdownItKbd(this.md, this.config);
@@ -379,54 +357,82 @@ export class MarkdownEngine {
   /**
    * Generate scripts string for preview usage.
    */
-  public generateScriptsForPreview(isForPresentation = false, yamlConfig = {}) {
+  public generateScriptsForPreview(
+    isForPresentation = false,
+    yamlConfig = {},
+    isForVSCode = false,
+  ) {
     let scripts = "";
 
     // prevent `id="exports"` element from linked to `window` object.
     scripts += `<script>var exports = undefined</script>`;
 
     // jquery
-    scripts += `<script type="text/javascript" src="file:///${path.resolve(
-      utility.extensionDirectoryPath,
-      "./dependencies/jquery/jquery.js",
+    scripts += `<script type="text/javascript" src="${utility.addFileProtocol(
+      path.resolve(
+        utility.extensionDirectoryPath,
+        "./dependencies/jquery/jquery.js",
+      ),
+      isForVSCode,
     )}" charset="UTF-8"></script>`;
 
     // jquery contextmenu
-    scripts += `<script type="text/javascript" src="file:///${path.resolve(
-      utility.extensionDirectoryPath,
-      "./dependencies/jquery-contextmenu/jquery.ui.position.min.js",
+    scripts += `<script type="text/javascript" src="${utility.addFileProtocol(
+      path.resolve(
+        utility.extensionDirectoryPath,
+        "./dependencies/jquery-contextmenu/jquery.ui.position.min.js",
+      ),
+      isForVSCode,
     )}" charset="UTF-8"></script>`;
-    scripts += `<script type="text/javascript" src="file:///${path.resolve(
-      utility.extensionDirectoryPath,
-      "./dependencies/jquery-contextmenu/jquery.contextMenu.min.js",
+    scripts += `<script type="text/javascript" src="${utility.addFileProtocol(
+      path.resolve(
+        utility.extensionDirectoryPath,
+        "./dependencies/jquery-contextmenu/jquery.contextMenu.min.js",
+      ),
+      isForVSCode,
     )}" charset="UTF-8"></script>`;
 
     // jquery modal
-    scripts += `<script type="text/javascript" src="file:///${path.resolve(
-      utility.extensionDirectoryPath,
-      "./dependencies/jquery-modal/jquery.modal.min.js",
+    scripts += `<script type="text/javascript" src="${utility.addFileProtocol(
+      path.resolve(
+        utility.extensionDirectoryPath,
+        "./dependencies/jquery-modal/jquery.modal.min.js",
+      ),
+      isForVSCode,
     )}" charset="UTF-8"></script>`;
 
     // crpto-js
-    scripts += `<script type="text/javascript" src="file:///${path.resolve(
-      utility.extensionDirectoryPath,
-      "./dependencies/crypto-js/crypto-js.js",
+    scripts += `<script type="text/javascript" src="${utility.addFileProtocol(
+      path.resolve(
+        utility.extensionDirectoryPath,
+        "./dependencies/crypto-js/crypto-js.js",
+      ),
+      isForVSCode,
     )}" charset="UTF-8"></script>`;
 
     // mermaid
-    scripts += `<script type="text/javascript" src="file:///${path.resolve(
-      utility.extensionDirectoryPath,
-      `./dependencies/mermaid/mermaid.min.js`,
+    scripts += `<script type="text/javascript" src="${utility.addFileProtocol(
+      path.resolve(
+        utility.extensionDirectoryPath,
+        `./dependencies/mermaid/mermaid.min.js`,
+      ),
+      isForVSCode,
     )}" charset="UTF-8"></script>`;
 
     // wavedrome
-    scripts += `<script type="text/javascript" src="file:///${path.resolve(
-      utility.extensionDirectoryPath,
-      "./dependencies/wavedrom/default.js",
+    scripts += `<script type="text/javascript" src="${utility.addFileProtocol(
+      path.resolve(
+        utility.extensionDirectoryPath,
+        "./dependencies/wavedrom/default.js",
+      ),
+      isForVSCode,
     )}" charset="UTF-8"></script>`;
-    scripts += `<script type="text/javascript" src="file:///${path.resolve(
-      utility.extensionDirectoryPath,
-      "./dependencies/wavedrom/wavedrom.min.js",
+    scripts += `<script type="text/javascript" src="${utility.addFileProtocol(
+      path.resolve(
+        utility.extensionDirectoryPath,
+        "./dependencies/wavedrom/wavedrom.min.js",
+      ),
+      isForVSCode,
     )}" charset="UTF-8"></script>`;
 
     // math
@@ -438,10 +444,23 @@ export class MarkdownEngine {
       mathJaxConfig["tex2jax"] = mathJaxConfig["tex2jax"] || {};
       mathJaxConfig["tex2jax"]["inlineMath"] = this.config.mathInlineDelimiters;
       mathJaxConfig["tex2jax"]["displayMath"] = this.config.mathBlockDelimiters;
+      mathJaxConfig["HTML-CSS"]["imageFont"] = null; // Disable image font, otherwise the preview will only display black color image.
+      mathJaxConfig["root"] = utility.addFileProtocol(
+        slash(
+          path.resolve(
+            utility.extensionDirectoryPath,
+            "./dependencies/mathjax",
+          ),
+        ),
+        isForVSCode,
+      );
 
-      scripts += `<script type="text/javascript" async src="file:///${path.resolve(
-        utility.extensionDirectoryPath,
-        "./dependencies/mathjax/MathJax.js",
+      scripts += `<script type="text/javascript" async src="${utility.addFileProtocol(
+        path.resolve(
+          utility.extensionDirectoryPath,
+          "./dependencies/mathjax/MathJax.js",
+        ),
+        isForVSCode,
       )}" charset="UTF-8"></script>`;
       scripts += `<script type="text/x-mathjax-config"> MathJax.Hub.Config(${JSON.stringify(
         mathJaxConfig,
@@ -450,13 +469,19 @@ export class MarkdownEngine {
 
     // reveal.js
     if (isForPresentation) {
-      scripts += `<script src='file:///${path.resolve(
-        utility.extensionDirectoryPath,
-        "./dependencies/reveal/lib/js/head.min.js",
+      scripts += `<script src='${utility.addFileProtocol(
+        path.resolve(
+          utility.extensionDirectoryPath,
+          "./dependencies/reveal/lib/js/head.min.js",
+        ),
+        isForVSCode,
       )}'></script>`;
-      scripts += `<script src='file:///${path.resolve(
-        utility.extensionDirectoryPath,
-        "./dependencies/reveal/js/reveal.js",
+      scripts += `<script src='${utility.addFileProtocol(
+        path.resolve(
+          utility.extensionDirectoryPath,
+          "./dependencies/reveal/js/reveal.js",
+        ),
+        isForVSCode,
       )}'></script>`;
 
       let presentationConfig = yamlConfig["presentation"] || {};
@@ -506,7 +531,8 @@ if (typeof(window['Reveal']) !== 'undefined') {
   Reveal.addEventListener('slidechanged', mermaidRevealHelper)
   Reveal.addEventListener('ready', mermaidRevealHelper)
 } else {
-  mermaid.init(null, document.getElementsByClassName('mermaid'))
+  // The line below will cause mermaid bug in preview.
+  // mermaid.init(null, document.getElementsByClassName('mermaid'))
 }
 </script>`;
 
@@ -518,13 +544,19 @@ if (typeof(window['Reveal']) !== 'undefined') {
     }
 
     // flowchart.js
-    scripts += `<script src='file:///${path.resolve(
-      utility.extensionDirectoryPath,
-      "./dependencies/raphael/raphael.js",
+    scripts += `<script src='${utility.addFileProtocol(
+      path.resolve(
+        utility.extensionDirectoryPath,
+        "./dependencies/raphael/raphael.js",
+      ),
+      isForVSCode,
     )}'></script>`;
-    scripts += `<script src='file:///${path.resolve(
-      utility.extensionDirectoryPath,
-      "./dependencies/flowchart/flowchart.min.js",
+    scripts += `<script src='${utility.addFileProtocol(
+      path.resolve(
+        utility.extensionDirectoryPath,
+        "./dependencies/flowchart/flowchart.min.js",
+      ),
+      isForVSCode,
     )}'></script>`;
     // flowchart init script
     if (isForPresentation) {
@@ -544,20 +576,15 @@ if (typeof(window['Reveal']) !== 'undefined') {
       </script>`;
     }
 
-    // vega and vega-lite with vega-embed
-    // https://vega.github.io/vega/usage/#embed
-    scripts += `<script src="file:///${path.resolve(
-      utility.extensionDirectoryPath,
-      `./dependencies/vega/vega.min.js`,
-    )}" charset="UTF-8"></script>`;
-    scripts += `<script src="file:///${path.resolve(
-      utility.extensionDirectoryPath,
-      `./dependencies/vega-lite/vega-lite.min.js`,
-    )}" charset="UTF-8"></script>`;
-    scripts += `<script src="file:///${path.resolve(
-      utility.extensionDirectoryPath,
-      `./dependencies/vega-embed/vega-embed.min.js`,
-    )}" charset="UTF-8"></script>`;
+    dependentLibraryMaterials.forEach(({ key }) => {
+      scripts += `<script src="${utility.addFileProtocol(
+        path.resolve(
+          utility.extensionDirectoryPath,
+          `./dependencies/${key}/${key}.min.js`,
+        ),
+        isForVSCode,
+      )}" charset="UTF-8"></script>`;
+    });
 
     if (isForPresentation) {
       scripts += `<script>
@@ -581,17 +608,26 @@ if (typeof(window['Reveal']) !== 'undefined') {
     }
 
     // sequence diagram
-    scripts += `<script src='file:///${path.resolve(
-      utility.extensionDirectoryPath,
-      "./dependencies/webfont/webfontloader.js",
+    scripts += `<script src='${utility.addFileProtocol(
+      path.resolve(
+        utility.extensionDirectoryPath,
+        "./dependencies/webfont/webfontloader.js",
+      ),
+      isForVSCode,
     )}'></script>`;
-    scripts += `<script src='file:///${path.resolve(
-      utility.extensionDirectoryPath,
-      "./dependencies/underscore/underscore.js",
+    scripts += `<script src='${utility.addFileProtocol(
+      path.resolve(
+        utility.extensionDirectoryPath,
+        "./dependencies/underscore/underscore.js",
+      ),
+      isForVSCode,
     )}'></script>`;
-    scripts += `<script src='file:///${path.resolve(
-      utility.extensionDirectoryPath,
-      "./dependencies/js-sequence-diagrams/sequence-diagram-min.js",
+    scripts += `<script src='${utility.addFileProtocol(
+      path.resolve(
+        utility.extensionDirectoryPath,
+        "./dependencies/js-sequence-diagrams/sequence-diagram-min.js",
+      ),
+      isForVSCode,
     )}'></script>`;
     // sequence diagram init script
     if (isForPresentation) {
@@ -683,25 +719,35 @@ if (typeof(window['Reveal']) !== 'undefined') {
   /**
    * Generate styles string for preview usage.
    */
-  public generateStylesForPreview(isPresentationMode = false, yamlConfig = {}) {
+  public generateStylesForPreview(
+    isPresentationMode = false,
+    yamlConfig = {},
+    isForVSCode = false,
+  ) {
     let styles = "";
 
     // loading.css
-    styles += `<link rel="stylesheet" href="file:///${path.resolve(
-      utility.extensionDirectoryPath,
-      "./styles/loading.css",
+    styles += `<link rel="stylesheet" href="${utility.addFileProtocol(
+      path.resolve(utility.extensionDirectoryPath, "./styles/loading.css"),
+      isForVSCode,
     )}">`;
 
     // jquery-contextmenu
-    styles += `<link rel="stylesheet" href="file:///${path.resolve(
-      utility.extensionDirectoryPath,
-      `./dependencies/jquery-contextmenu/jquery.contextMenu.min.css`,
+    styles += `<link rel="stylesheet" href="${utility.addFileProtocol(
+      path.resolve(
+        utility.extensionDirectoryPath,
+        `./dependencies/jquery-contextmenu/jquery.contextMenu.min.css`,
+      ),
+      isForVSCode,
     )}">`;
 
     // jquery-modal
-    styles += `<link rel="stylesheet" href="file:///${path.resolve(
-      utility.extensionDirectoryPath,
-      `./dependencies/jquery-modal/jquery.modal.min.css`,
+    styles += `<link rel="stylesheet" href="${utility.addFileProtocol(
+      path.resolve(
+        utility.extensionDirectoryPath,
+        `./dependencies/jquery-modal/jquery.modal.min.css`,
+      ),
+      isForVSCode,
     )}">`;
 
     // check math
@@ -709,60 +755,84 @@ if (typeof(window['Reveal']) !== 'undefined') {
       this.config.mathRenderingOption === "KaTeX" &&
       !this.config.usePandocParser
     ) {
-      styles += `<link rel="stylesheet" href="file:///${path.resolve(
-        utility.extensionDirectoryPath,
-        "./dependencies/katex/katex.min.css",
+      styles += `<link rel="stylesheet" href="${utility.addFileProtocol(
+        path.resolve(
+          utility.extensionDirectoryPath,
+          "./dependencies/katex/katex.min.css",
+        ),
+        isForVSCode,
       )}">`;
     }
 
     // check sequence diagram
-    styles += `<link rel="stylesheet" href="file:///${path.resolve(
-      utility.extensionDirectoryPath,
-      `./dependencies/js-sequence-diagrams/sequence-diagram-min.css`,
+    styles += `<link rel="stylesheet" href="${utility.addFileProtocol(
+      path.resolve(
+        utility.extensionDirectoryPath,
+        `./dependencies/js-sequence-diagrams/sequence-diagram-min.css`,
+      ),
+      isForVSCode,
     )}">`;
 
     // check font-awesome
-    styles += `<link rel="stylesheet" href="file:///${path.resolve(
-      utility.extensionDirectoryPath,
-      `./dependencies/font-awesome/css/font-awesome.min.css`,
+    styles += `<link rel="stylesheet" href="${utility.addFileProtocol(
+      path.resolve(
+        utility.extensionDirectoryPath,
+        `./dependencies/font-awesome/css/font-awesome.min.css`,
+      ),
+      isForVSCode,
     )}">`;
 
     // check preview theme and revealjs theme
     if (!isPresentationMode) {
-      styles += `<link rel="stylesheet" href="file:///${path.resolve(
-        utility.extensionDirectoryPath,
-        `./styles/preview_theme/${this.config.previewTheme}`,
+      styles += `<link rel="stylesheet" href="${utility.addFileProtocol(
+        path.resolve(
+          utility.extensionDirectoryPath,
+          `./styles/preview_theme/${this.config.previewTheme}`,
+        ),
+        isForVSCode,
       )}">`;
     } else {
-      styles += `<link rel="stylesheet" href="file:///${path.resolve(
-        extensionDirectoryPath,
-        "./dependencies/reveal/reveal.css",
+      styles += `<link rel="stylesheet" href="${utility.addFileProtocol(
+        path.resolve(
+          extensionDirectoryPath,
+          "./dependencies/reveal/css/reveal.css",
+        ),
+        isForVSCode,
       )}" >`;
-      styles += `<link rel="stylesheet" href="file:///${path.resolve(
-        extensionDirectoryPath,
-        `./styles/revealjs_theme/${
-          yamlConfig["presentation"] &&
-          typeof yamlConfig["presentation"] === "object" &&
-          yamlConfig["presentation"]["theme"]
-            ? yamlConfig["presentation"]["theme"]
-            : this.config.revealjsTheme
-        }`,
+      styles += `<link rel="stylesheet" href="${utility.addFileProtocol(
+        path.resolve(
+          extensionDirectoryPath,
+          `./dependencies/reveal/css/theme/${
+            yamlConfig["presentation"] &&
+            typeof yamlConfig["presentation"] === "object" &&
+            yamlConfig["presentation"]["theme"]
+              ? yamlConfig["presentation"]["theme"]
+              : this.config.revealjsTheme
+          }`,
+        ),
+        isForVSCode,
       )}" >`;
     }
 
     // check prism
-    styles += `<link rel="stylesheet" href="file:///${path.resolve(
-      utility.extensionDirectoryPath,
-      `./styles/prism_theme/${this.getPrismTheme(
-        isPresentationMode,
-        yamlConfig,
-      )}`,
+    styles += `<link rel="stylesheet" href="${utility.addFileProtocol(
+      path.resolve(
+        utility.extensionDirectoryPath,
+        `./styles/prism_theme/${this.getPrismTheme(
+          isPresentationMode,
+          yamlConfig,
+        )}`,
+      ),
+      isForVSCode,
     )}">`;
 
     // style template
-    styles += `<link rel="stylesheet" media="screen" href="${path.resolve(
-      utility.extensionDirectoryPath,
-      "./styles/style-template.css",
+    styles += `<link rel="stylesheet" media="screen" href="${utility.addFileProtocol(
+      path.resolve(
+        utility.extensionDirectoryPath,
+        "./styles/style-template.css",
+      ),
+      isForVSCode,
     )}">`;
 
     // Video link
@@ -778,22 +848,28 @@ if (typeof(window['Reveal']) !== 'undefined') {
    * Generate <style> and <link> string from an array of file paths.
    * @param JSAndCssFiles
    */
-  private generateJSAndCssFilesForPreview(JSAndCssFiles = []) {
+  private generateJSAndCssFilesForPreview(
+    JSAndCssFiles = [],
+    isForVSCode = false,
+  ) {
     let output = "";
     JSAndCssFiles.forEach((sourcePath) => {
       let absoluteFilePath = sourcePath;
       if (sourcePath[0] === "/") {
-        absoluteFilePath =
-          "file:///" +
-          path.resolve(this.projectDirectoryPath, "." + sourcePath);
+        absoluteFilePath = utility.addFileProtocol(
+          path.resolve(this.projectDirectoryPath, "." + sourcePath),
+          isForVSCode,
+        );
       } else if (
         sourcePath.match(/^file:\/\//) ||
         sourcePath.match(/^https?\:\/\//)
       ) {
         // do nothing
       } else {
-        absoluteFilePath =
-          "file:///" + path.resolve(this.fileDirectoryPath, sourcePath);
+        absoluteFilePath = utility.addFileProtocol(
+          path.resolve(this.fileDirectoryPath, sourcePath),
+          isForVSCode,
+        );
       }
 
       if (absoluteFilePath.endsWith(".js")) {
@@ -817,14 +893,16 @@ if (typeof(window['Reveal']) !== 'undefined') {
     styles = "",
     head = `<base href="${this.filePath}">`,
     config = {},
+    isForVSCode = false,
+    contentSecurityPolicy = "",
   }): Promise<string> {
     if (!inputString) {
       inputString = fs.readFileSync(this.filePath, { encoding: "utf-8" });
     }
     if (!webviewScript) {
-      webviewScript = path.resolve(
-        utility.extensionDirectoryPath,
-        "./out/src/webview.js",
+      webviewScript = utility.addFileProtocol(
+        path.resolve(utility.extensionDirectoryPath, "./out/src/webview.js"),
+        isForVSCode,
       );
     }
     if (!body) {
@@ -882,6 +960,7 @@ if (typeof(window['Reveal']) !== 'undefined') {
         isForPreview: true,
         useRelativeFilePath: false,
         hideFrontMatter: false,
+        isForVSCodePreview: isForVSCode,
       },
     );
     const isPresentationMode = yamlConfig["isPresentationMode"];
@@ -894,15 +973,27 @@ if (typeof(window['Reveal']) !== 'undefined') {
           JSON.stringify({ ...this.config, ...config }),
         )}" data-time="${Date.now()}">
         <meta charset="UTF-8">
+        ${
+          contentSecurityPolicy
+            ? `<meta
+          http-equiv="Content-Security-Policy"
+          content="${contentSecurityPolicy}"
+        />`
+            : ""
+        }
 
-        ${this.generateStylesForPreview(isPresentationMode, yamlConfig)}
+        ${this.generateStylesForPreview(
+          isPresentationMode,
+          yamlConfig,
+          isForVSCode,
+        )}
         ${styles}
-        <link rel="stylesheet" href="file:///${path.resolve(
-          utility.extensionDirectoryPath,
-          "./styles/preview.css",
+        <link rel="stylesheet" href="${utility.addFileProtocol(
+          path.resolve(utility.extensionDirectoryPath, "./styles/preview.css"),
+          isForVSCode,
         )}">
 
-        ${this.generateJSAndCssFilesForPreview(JSAndCssFiles)}
+        ${this.generateJSAndCssFilesForPreview(JSAndCssFiles, isForVSCode)}
         ${head}
       </head>
       <body class="preview-container">
@@ -913,7 +1004,11 @@ if (typeof(window['Reveal']) !== 'undefined') {
         </div>
         ${body}
       </body>
-      ${this.generateScriptsForPreview(isPresentationMode, yamlConfig)}
+      ${this.generateScriptsForPreview(
+        isPresentationMode,
+        yamlConfig,
+        isForVSCode,
+      )}
       ${scripts}
       <script src="${webviewScript}"></script>
       </html>`;
@@ -966,7 +1061,7 @@ if (typeof(window['Reveal']) !== 'undefined') {
         <script type="text/x-mathjax-config">
           MathJax.Hub.Config(${JSON.stringify(mathJaxConfig)});
         </script>
-        <script type="text/javascript" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js"></script>
+        <script type="text/javascript" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js"></script>
         `;
       }
     } else if (this.config.mathRenderingOption === "KaTeX") {
@@ -976,7 +1071,7 @@ if (typeof(window['Reveal']) !== 'undefined') {
           "./dependencies/katex/katex.min.css",
         )}">`;
       } else {
-        mathStyle = `<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/katex.min.css">`;
+        mathStyle = `<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.css">`;
       }
     } else {
       mathStyle = "";
@@ -1005,7 +1100,7 @@ if (typeof(window['Reveal']) !== 'undefined') {
           "./dependencies/mermaid/mermaid.min.js",
         )}" charset="UTF-8"></script>`;
       } else {
-        mermaidScript = `<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/mermaid@8.0.0-rc.8/dist/mermaid.min.js"></script>`;
+        mermaidScript = `<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/mermaid@8.1.0/dist/mermaid.min.js"></script>`;
       }
       const mermaidConfig: string = await utility.getMermaidConfig();
       mermaidInitScript += `<script>
@@ -1066,24 +1161,15 @@ if (typeof(window['Reveal']) !== 'undefined') {
       html.indexOf(' class="vega') >= 0 ||
       html.indexOf(' class="vega-lite') >= 0
     ) {
-      if (options.offline) {
-        vegaScript += `<script type="text/javascript" src="file:///${path.resolve(
-          utility.extensionDirectoryPath,
-          `./dependencies/vega/vega.js`,
-        )}" charset="UTF-8"></script>`;
-        vegaScript += `<script type="text/javascript" src="file:///${path.resolve(
-          utility.extensionDirectoryPath,
-          `./dependencies/vega-lite/vega-lite.js`,
-        )}" charset="UTF-8"></script>`;
-        vegaScript += `<script type="text/javascript" src="file:///${path.resolve(
-          utility.extensionDirectoryPath,
-          `./dependencies/vega-embed/vega-embed.js`,
-        )}" charset="UTF-8"></script>`;
-      } else {
-        vegaScript += `<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vega/4.4.0/vega.min.js"></script>`;
-        vegaScript += `<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vega-lite/3.0.0-rc10/vega-lite.min.js"></script>`;
-        vegaScript += `<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vega-embed/3.26.1/vega-embed.min.js"></script>`;
-      }
+      dependentLibraryMaterials.forEach(({ key, version }) => {
+        vegaScript += options.offline
+          ? `<script type="text/javascript" src="file:///${path.resolve(
+              utility.extensionDirectoryPath,
+              `./dependencies/${key}/${key}.min.js`,
+            )}" charset="UTF-8"></script>`
+          : `<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/${key}@${version}/build/${name}.js"></script>`;
+      });
+
       vegaInitScript += `<script>
       var vegaEls = document.querySelectorAll('.vega, .vega-lite');
       function reportVegaError(el, error) {
@@ -1204,8 +1290,8 @@ for (var i = 0; i < flowcharts.length; i++) {
         )}'></script>`;
       } else {
         presentationScript = `
-        <script src='https://cdnjs.cloudflare.com/ajax/libs/reveal.js/3.7.0/lib/js/head.min.js'></script>
-        <script src='https://cdnjs.cloudflare.com/ajax/libs/reveal.js/3.7.0/js/reveal.min.js'></script>`;
+        <script src='https://cdn.jsdelivr.net/npm/reveal.js@3.7.0/lib/js/head.min.js'></script>
+        <script src='https://cdn.jsdelivr.net/npm/reveal.js@3.7.0/js/reveal.js'></script>`;
       }
 
       const presentationConfig = yamlConfig["presentation"] || {};
@@ -1256,7 +1342,7 @@ for (var i = 0; i < flowcharts.length; i++) {
       ${fs.readFileSync(
         path.resolve(
           extensionDirectoryPath,
-          "./dependencies/reveal/reveal.css",
+          "./dependencies/reveal/css/reveal.css",
         ),
       )}
       ${
@@ -1264,7 +1350,7 @@ for (var i = 0; i < flowcharts.length; i++) {
           ? fs.readFileSync(
               path.resolve(
                 extensionDirectoryPath,
-                "./dependencies/reveal/pdf.css",
+                "./dependencies/reveal/css/print/pdf.css",
               ),
             )
           : ""
@@ -1285,16 +1371,6 @@ for (var i = 0; i < flowcharts.length; i++) {
     let princeClass = "";
     if (options.isForPrince) {
       princeClass = "prince";
-    }
-
-    // phantomjs
-    let phantomjsClass = "";
-    if (options.phantomjsType) {
-      if (options.phantomjsType === "pdf") {
-        phantomjsClass = "phantomjs-pdf";
-      } else {
-        phantomjsClass = "phantomjs-image";
-      }
     }
 
     let title = path.basename(this.filePath);
@@ -1330,19 +1406,21 @@ for (var i = 0; i < flowcharts.length; i++) {
             );
 
       if (yamlConfig["isPresentationMode"]) {
-        styleCSS += await utility.readFile(
-          path.resolve(
+        const theme =
+          yamlConfig["presentation"] &&
+          typeof yamlConfig["presentation"] === "object" &&
+          yamlConfig["presentation"]["theme"]
+            ? yamlConfig["presentation"]["theme"]
+            : this.config.revealjsTheme;
+
+        if (options.offline) {
+          presentationStyle += `<link rel="stylesheet" href="file:///${path.resolve(
             extensionDirectoryPath,
-            `./styles/revealjs_theme/${
-              yamlConfig["presentation"] &&
-              typeof yamlConfig["presentation"] === "object" &&
-              yamlConfig["presentation"]["theme"]
-                ? yamlConfig["presentation"]["theme"]
-                : this.config.revealjsTheme
-            }`,
-          ),
-          { encoding: "utf-8" },
-        );
+            `./dependencies/reveal/css/theme/${theme}`,
+          )}">`;
+        } else {
+          presentationStyle += `<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@3.7.0/css/theme/${theme}">`;
+        }
       } else {
         // preview theme
         styleCSS +=
@@ -1399,10 +1477,10 @@ for (var i = 0; i < flowcharts.length; i++) {
       sidebarTOCScript = `
 <script>
 ${
-        yamlConfig["html"] && yamlConfig["html"]["toc"]
-          ? `document.body.setAttribute('html-show-sidebar-toc', true)`
-          : ""
-      }
+  yamlConfig["html"] && yamlConfig["html"]["toc"]
+    ? `document.body.setAttribute('html-show-sidebar-toc', true)`
+    : ""
+}
 var sidebarTOCBtn = document.getElementById('sidebar-toc-btn')
 sidebarTOCBtn.addEventListener('click', function(event) {
   event.stopPropagation()
@@ -1482,7 +1560,7 @@ sidebarTOCBtn.addEventListener('click', function(event) {
     <body ${options.isForPrint ? "" : 'for="html-export"'} ${
       yamlConfig["isPresentationMode"] ? "data-presentation-mode" : ""
     }>
-      <div class="mume markdown-preview ${princeClass} ${phantomjsClass} ${elementClass}" ${
+      <div class="mume markdown-preview ${princeClass} ${elementClass}" ${
       yamlConfig["isPresentationMode"] ? "data-presentation-mode" : ""
     } ${elementId ? `id="${elementId}"` : ""}>
       ${html}
@@ -2138,28 +2216,31 @@ sidebarTOCBtn.addEventListener('click', function(event) {
       offline: true,
     });
 
-    if (!puppeteer) {
-      // require puppeteer from global node_modules
-      try {
-        const globalNodeModulesPath = (await utility.execFile(
-          process.platform === "win32" ? "npm.cmd" : "npm",
-          ["root", "-g"],
-        ))
-          .trim()
-          .split("\n")[0]
-          .trim();
-        puppeteer = require(path.resolve(globalNodeModulesPath, "./puppeteer")); // trim() function here is very necessary.
-      } catch (error) {
-        throw new Error(
-          "Puppeteer (Headless Chrome) is required to be installed globally. Please run `npm install -g puppeteer` in your terminal.  \n",
-        );
-      }
+    let browser = null;
+    let puppeteer = null;
+    if (this.config.usePuppeteerCore) {
+      puppeteer = require("puppeteer-core");
+      browser = await puppeteer.launch({
+        executablePath: this.config.chromePath || require("chrome-location"),
+        headless: true,
+      });
+    } else {
+      const globalNodeModulesPath = (await utility.execFile(
+        process.platform === "win32" ? "npm.cmd" : "npm",
+        ["root", "-g"],
+      ))
+        .trim()
+        .split("\n")[0]
+        .trim();
+      puppeteer = require(path.resolve(globalNodeModulesPath, "./puppeteer")); // trim() function here is very necessary.
+      browser = await puppeteer.launch({
+        headless: true,
+      });
     }
 
     const info = await utility.tempOpen({ prefix: "mume", suffix: ".html" });
     await utility.writeFile(info.fd, html);
 
-    const browser = await puppeteer.launch();
     const page = await browser.newPage();
     const loadPath =
       "file:///" +
@@ -2183,6 +2264,22 @@ sidebarTOCBtn.addEventListener('click', function(event) {
       ...(yamlConfig["chrome"] || yamlConfig["puppeteer"] || {}),
     };
 
+    // wait for timeout
+    let timeout = 0;
+    if (yamlConfig["chrome"] && yamlConfig["chrome"]["timeout"]) {
+      timeout = yamlConfig["chrome"]["timeout"];
+    } else if (yamlConfig["puppeteer"] && yamlConfig["puppeteer"]["timeout"]) {
+      timeout = yamlConfig["puppeteer"]["timeout"];
+    }
+    if (timeout && typeof timeout === "number") {
+      await page.waitFor(timeout);
+    } else if (
+      this.config.puppeteerWaitForTimeout &&
+      this.config.puppeteerWaitForTimeout > 0
+    ) {
+      await page.waitFor(this.config.puppeteerWaitForTimeout);
+    }
+
     if (fileType === "pdf") {
       await page.pdf(puppeteerConfig);
     } else {
@@ -2195,86 +2292,6 @@ sidebarTOCBtn.addEventListener('click', function(event) {
       utility.openFile(dest);
     }
     return dest;
-  }
-
-  /**
-   * Phantomjs file export
-   * The config could be set by front-matter.
-   * Check https://github.com/marcbachmann/node-html-pdf website.
-   * @param fileType the export file type
-   */
-  public async phantomjsExport({
-    fileType = "pdf",
-    runAllCodeChunks = false,
-    openFileAfterGeneration = false,
-  }): Promise<string> {
-    const inputString = await utility.readFile(this.filePath, {
-      encoding: "utf-8",
-    });
-    let html;
-    let yamlConfig;
-    ({ html, yamlConfig } = await this.parseMD(inputString, {
-      useRelativeFilePath: false,
-      hideFrontMatter: true,
-      isForPreview: false,
-      runAllCodeChunks,
-    }));
-    let dest = this.filePath;
-    const extname = path.extname(dest);
-    dest = dest.replace(new RegExp(extname + "$"), "." + fileType);
-
-    html = await this.generateHTMLTemplateForExport(html, yamlConfig, {
-      isForPrint: true,
-      isForPrince: false,
-      embedLocalImages: false,
-      offline: true,
-      phantomjsType: fileType,
-    });
-
-    // TODO: phantomjs reveal.js export directly.
-    if (yamlConfig["isPresentationMode"]) {
-      // reveal.js presentation
-      const info = await utility.tempOpen({ prefix: "mume", suffix: ".html" });
-      await utility.writeFile(info.fd, html);
-      const url = "file:///" + info.path + "?print-pdf";
-      return url;
-    }
-
-    const phantomjsConfig = {
-      type: fileType,
-      border: "1cm",
-      quality: "75",
-      script: path.join(
-        extensionDirectoryPath,
-        "./dependencies/phantomjs/pdf_a4_portrait.js",
-      ),
-      ...(await utility.getPhantomjsConfig()),
-      ...(yamlConfig["phantomjs"] || yamlConfig["phantom"] || {}),
-    };
-    if (!phantomjsConfig["phantomPath"]) {
-      phantomjsConfig["phantomPath"] = this.config.phantomPath;
-    }
-
-    return await new Promise<string>((resolve, reject) => {
-      try {
-        pdf.create(html, phantomjsConfig).toFile(dest, (error, res) => {
-          if (error) {
-            return reject(error);
-          } else {
-            if (openFileAfterGeneration) {
-              utility.openFile(dest);
-            }
-            return resolve(dest);
-          }
-        });
-      } catch (error) {
-        let errorMessage = error.toString();
-        if (errorMessage.indexOf("Error: write EPIPE") >= 0) {
-          errorMessage = `"phantomjs" is required to be installed.`;
-        }
-        return reject(errorMessage);
-      }
-    });
   }
 
   /**
@@ -2395,7 +2412,7 @@ sidebarTOCBtn.addEventListener('click', function(event) {
       "." + fileType.toLowerCase(),
     );
 
-    const ebookConfig = yamlConfig["ebook"];
+    const ebookConfig = yamlConfig["ebook"] || {};
     if (!ebookConfig) {
       throw new Error(
         "eBook config not found. Please insert ebook front-matter to your markdown file.",
@@ -2411,16 +2428,14 @@ sidebarTOCBtn.addEventListener('click', function(event) {
     }
 
     let $ = cheerio.load(`<div>${html}</div>`);
-
     const tocStructure: Array<{
       level: number;
       filePath: string;
       heading: string;
       id: string;
     }> = [];
-    let headingOffset = 0;
-
-    const $toc = $(":root > ul").last();
+    const headingIdGenerator = new HeadingIdGenerator();
+    const $toc = $("div > ul").last();
     if ($toc.length) {
       if (ebookConfig["include_toc"] === false) {
         // remove itself and the heading ahead
@@ -2458,10 +2473,9 @@ sidebarTOCBtn.addEventListener('click', function(event) {
 
         const filePath = decodeURIComponent($a.attr("href")); // markdown file path
         const heading = $a.html();
-        const id = "ebook-heading-id-" + headingOffset;
+        const id = headingIdGenerator.generateId(heading); // "ebook-heading-id-" + headingOffset;
 
         tocStructure.push({ level, filePath, heading, id });
-        headingOffset += 1;
 
         $a.attr("href", "#" + id); // change id
         if ($li.children().length > 1) {
@@ -2517,17 +2531,8 @@ sidebarTOCBtn.addEventListener('click', function(event) {
     /* tslint:disable-next-line:no-shadowed-variable */
     results.forEach(({ heading, id, level, filePath, html }) => {
       /* tslint:disable-next-line:no-shadowed-variable */
-      const $ = cheerio.load(`<div>${html}</div>`);
-      const $firstChild = $(":root")
-        .children()
-        .first();
-      if ($firstChild.length) {
-        $firstChild.attr("id", id);
-        $firstChild.attr("ebook-toc-level-" + (level + 1), "");
-        $firstChild.attr("heading", heading);
-      }
-
-      outputHTML += $.html().replace(/^<div>(.+)<\/div>$/, "$1"); // append new content
+      outputHTML += `<div id="${id}" ebook-toc-level-${level +
+        1} heading="${heading}">${html}</div>`; // append new content
     });
 
     $ = cheerio.load(outputHTML);
@@ -2568,7 +2573,7 @@ sidebarTOCBtn.addEventListener('click', function(event) {
         ebookConfig["html"] &&
         ebookConfig["html"].cdn
       ) {
-        mathStyle = `<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.0-rc.1/dist/katex.min.css">`;
+        mathStyle = `<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.css">`;
       } else {
         mathStyle = `<link rel="stylesheet" href="file:///${path.resolve(
           extensionDirectoryPath,
@@ -2590,7 +2595,11 @@ sidebarTOCBtn.addEventListener('click', function(event) {
         utility.readFile(
           path.resolve(
             extensionDirectoryPath,
-            `./styles/prism_theme/${this.getPrismTheme(false)}`,
+            `./styles/prism_theme/${
+              /*this.getPrismTheme(false)*/ MarkdownEngine.AutoPrismThemeMap[
+                ebookConfig["theme"] || this.config.previewTheme
+              ]
+            }`,
           ),
           { encoding: "utf-8" },
         ),
@@ -2603,7 +2612,8 @@ sidebarTOCBtn.addEventListener('click', function(event) {
         utility.readFile(
           path.resolve(
             extensionDirectoryPath,
-            `./styles/preview_theme/${this.config.previewTheme}`,
+            `./styles/preview_theme/${ebookConfig["theme"] ||
+              this.config.previewTheme}`,
           ),
           { encoding: "utf-8" },
         ),
@@ -2726,6 +2736,7 @@ sidebarTOCBtn.addEventListener('click', function(event) {
         pandocMarkdownFlavor: this.config.pandocMarkdownFlavor,
         pandocPath: this.config.pandocPath,
         latexEngine: this.config.latexEngine,
+        imageMagickPath: this.config.imageMagickPath,
       },
       config,
     );
@@ -2772,7 +2783,7 @@ sidebarTOCBtn.addEventListener('click', function(event) {
      * markdownConfig has the following properties:
      *     path:                        destination of the output file
      *     image_dir:                   where to save the image file
-     *     use_abolute_image_path:      as the name shows.
+     *     use_absolute_image_path:      as the name shows.
      *     ignore_from_front_matter:    default is true.
      */
     let markdownConfig = {};
@@ -2820,11 +2831,14 @@ sidebarTOCBtn.addEventListener('click', function(event) {
         fileDirectoryPath: this.fileDirectoryPath,
         protocolsWhiteListRegExp: this.protocolsWhiteListRegExp,
         filesCache: this.filesCache,
+        mathRenderingOption: this.config.mathRenderingOption,
         mathInlineDelimiters: this.config.mathInlineDelimiters,
         mathBlockDelimiters: this.config.mathBlockDelimiters,
+        mathRenderingOnlineService: this.config.mathRenderingOnlineService,
         codeChunksData: this.codeChunksData,
         graphsCache: this.graphsCache,
         usePandocParser: this.config.usePandocParser,
+        imageMagickPath: this.config.imageMagickPath,
       },
       markdownConfig,
     );
@@ -2836,7 +2850,7 @@ sidebarTOCBtn.addEventListener('click', function(event) {
    * export_on_save:
    *    html: true
    *    prince: true
-   *    phantomjs|chrome: true  // or pdf | jpeg | png
+   *    puppeteer | chrome: true  // or pdf | jpeg | png
    *    pandoc: true
    *    ebook: true      // or epub | pdf | html | mobi
    *    markdown: true
@@ -2851,10 +2865,9 @@ sidebarTOCBtn.addEventListener('click', function(event) {
         this.htmlExport({});
       } else if (exporter === "prince") {
         this.princeExport({ openFileAfterGeneration: false });
-      } else if (exporter === "phantomjs" || exporter === "chrome") {
+      } else if (exporter === "puppeteer" || exporter === "chrome") {
         const fileTypes = data[exporter];
-        let func =
-          exporter === "phantomjs" ? this.phantomjsExport : this.chromeExport;
+        let func = this.chromeExport;
         func = func.bind(this);
 
         if (fileTypes === true) {
@@ -2902,15 +2915,19 @@ sidebarTOCBtn.addEventListener('click', function(event) {
           path.resolve(this.projectDirectoryPath, "." + filePath),
         );
       } else {
-        return (
-          "file:///" + path.resolve(this.projectDirectoryPath, "." + filePath)
+        return utility.addFileProtocol(
+          path.resolve(this.projectDirectoryPath, "." + filePath),
+          this.isForVSCodePreview,
         );
       }
     } else {
       if (relative) {
         return filePath;
       } else {
-        return "file:///" + path.resolve(this.fileDirectoryPath, filePath);
+        return utility.addFileProtocol(
+          path.resolve(this.fileDirectoryPath, filePath),
+          this.isForVSCodePreview,
+        );
       }
     }
   }
@@ -3073,9 +3090,7 @@ sidebarTOCBtn.addEventListener('click', function(event) {
         v += 1;
       }
 
-      output += `<section ${attrString} ${idString}  class=\"slide ${classString}\" data-line="${
-        slideConfig["lineNo"]
-      }" data-h=\"${h}\" data-v="${v}">${slide}</section>`;
+      output += `<section ${attrString} ${idString}  class=\"slide ${classString}\" data-line="${slideConfig["lineNo"]}" data-h=\"${h}\" data-v="${v}">${slide}</section>`;
       i += 1;
     }
     if (i > 0 && slideConfigs[i - 1]["vertical"]) {
@@ -3121,13 +3136,22 @@ sidebarTOCBtn.addEventListener('click', function(event) {
     text: string = "",
     args: string[],
   ): Promise<string> {
+    let mathRenderer;
+    switch (this.config.mathRenderingOption) {
+      case "MathJax":
+        mathRenderer = "--mathjax";
+        break;
+      case "KaTeX":
+        mathRenderer = "--katex";
+        break;
+      default:
+        mathRenderer = "";
+    }
     args = args || [];
     args = [
-      "-f",
-      this.config.pandocMarkdownFlavor, // -tex_math_dollars doesn't work properly
-      "-t",
-      "html",
-      "--mathjax",
+      "--from=" + this.config.pandocMarkdownFlavor, // -tex_math_dollars doesn't work properly
+      "--to=html",
+      mathRenderer,
     ]
       .concat(args)
       .filter((arg) => arg.length);
@@ -3194,7 +3218,7 @@ sidebarTOCBtn.addEventListener('click', function(event) {
             if (error) {
               return reject(error);
             } else if (stderr) {
-              return reject(stderr);
+              return resolve("<pre>" + stderr + "</pre>" + stdout);
             } else {
               return resolve(stdout);
             }
@@ -3220,6 +3244,8 @@ sidebarTOCBtn.addEventListener('click', function(event) {
         encoding: "utf-8",
       });
     }
+
+    this.isForVSCodePreview = options.isForVSCodePreview;
 
     if (utility.configs.parserConfig["onWillParseMarkdown"]) {
       inputString = await utility.configs.parserConfig["onWillParseMarkdown"](
@@ -3307,7 +3333,7 @@ sidebarTOCBtn.addEventListener('click', function(event) {
     const depthTo = tocConfig["depth_to"] || 6;
     const ordered = tocConfig["ordered"];
 
-    const tocObject = toc(headings, { ordered, depthFrom, depthTo, tab: "\t" });
+    const tocObject = toc(headings, { ordered, depthFrom, depthTo, tab: "  " });
     this.tocHTML = this.md.render(tocObject.content);
     // }
     this.headings = headings; // reset headings information
@@ -3357,7 +3383,7 @@ sidebarTOCBtn.addEventListener('click', function(event) {
       enhanceWithEmojiToSvg($);
     }
 
-    html = frontMatterTable + $.html();
+    html = frontMatterTable + $("head").html() + $("body").html(); // cheerio $.html() will add <html><head></head><body>$html</body></html>, so we hack it by select body first.
 
     /**
      * check slides

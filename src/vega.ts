@@ -1,8 +1,6 @@
-import * as path from "path";
+import { loader } from "vega-loader";
 import * as YAML from "yamljs";
-
 import * as utility from "./utility";
-
 let vega = null;
 
 async function renderVega(spec: object, baseURL): Promise<string> {
@@ -17,7 +15,7 @@ async function renderVega(spec: object, baseURL): Promise<string> {
 
   async function helper(): Promise<string> {
     const view = new vega.View(vega.parse(spec), {
-      loader: vega.loader({ baseURL }),
+      loader: loader({ baseURL }),
       // logLevel: vega.Warn, // <= this will cause Atom unsafe eval error.
       renderer: "none",
     }).initialize();
@@ -36,15 +34,7 @@ export async function toSVG(
   baseURL: string = "",
 ): Promise<string> {
   if (!vega) {
-    // Because `vega.min.js` has `eval` and `new Function`.
-    vega = utility.allowUnsafeEval(() =>
-      utility.allowUnsafeNewFunction(() =>
-        require(path.resolve(
-          utility.extensionDirectoryPath,
-          "./dependencies/vega/vega.min.js",
-        )),
-      ),
-    );
+    vega = utility.loadDependency("vega/vega.min.js");
   }
 
   spec = spec.trim();
