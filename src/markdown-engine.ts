@@ -1223,6 +1223,32 @@ for (var i = 0; i < flowcharts.length; i++) {
           dependencies.push({ src: "/reveal/plugin/notes/notes.js", async: true }); // TODO: copy notes.js file to corresponding folder
         }
       }
+      if (presentationConfig["enableChalkboard"]) {
+        if (options.offline) {
+          dependencies.push({
+            src: path.resolve(
+              extensionDirectoryPath,
+              "./dependencies/reveal/plugin/chalkboard/chalkboard.js",
+            ),
+            async: true,
+          });
+        } else {
+          dependencies.push({ src: "/reveal/plugin/notes/notes.js", async: true }); // TODO: copy notes.js file to corresponding folder
+        }
+      }
+      if (presentationConfig["enableFullscreen"]) {
+        if (options.offline) {
+          dependencies.push({
+            src: path.resolve(
+              extensionDirectoryPath,
+              "./dependencies/reveal/plugin/fullscreen/fullscreen.js",
+            ),
+            async: true,
+          });
+        } else {
+          dependencies.push({ src: "/reveal/plugin/notes/notes.js", async: true }); // TODO: copy notes.js file to corresponding folder
+        }
+      }
       presentationConfig["dependencies"] = dependencies;
 
       presentationStyle = `
