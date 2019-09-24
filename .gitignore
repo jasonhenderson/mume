@@ -1,11 +1,6 @@
 coverage
 node_modules
 test.js
-package-lock.json
 out
-<<<<<<< HEAD
 .idea
 .DS_Store
-=======
-.DS_Store
->>>>>>> 2979ec7089ff6da3201b59607636af0e2ebcadb5
