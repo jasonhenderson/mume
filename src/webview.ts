@@ -358,6 +358,22 @@
             callback: () => this.postMessage("openInBrowser", [this.sourceUri]),
           },
           sep1: "---------",
+          sync_server: {
+            name: "Sync with Server",
+            items: {
+              html_offline: {
+                name: "Upload to Server",
+                callback: () =>
+                  this.postMessage("syncServerUpload", [this.sourceUri]),
+              },
+              html_cdn: {
+                name: "Download from Server",
+                callback: () =>
+                  this.postMessage("syncServerDownload", [this.sourceUri]),
+              },
+            },
+          },
+          sep2: "---------",
           html_export: {
             name: "HTML",
             items: {
@@ -431,12 +447,12 @@
             callback: () =>
               this.postMessage("markdownExport", [this.sourceUri]),
           },
-          sep2: "---------",
+          sep3: "---------",
           image_helper: {
             name: "Image Helper",
             callback: () => window["$"]("#image-helper-view").modal(),
           },
-          sep3: "---------",
+          sep4: "---------",
           sync_source: {
             name: "Sync Source",
             callback: () => this.previewSyncSource(),
