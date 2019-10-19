@@ -108,6 +108,10 @@ export interface HTMLTemplateOption {
    * whether to embed svg images
    */
   embedSVG?: boolean;
+  /**
+   * base url for private CDN
+   */
+  privateCDNurl?: string;
 }
 
 const defaults = {
@@ -808,7 +812,7 @@ if (typeof(window['Reveal']) !== 'undefined') {
             yamlConfig["presentation"]["theme"]
               ? yamlConfig["presentation"]["theme"]
               : this.config.revealjsTheme
-            }`,
+          }`,
         ),
         isForVSCode,
       )}" >`;
@@ -980,7 +984,7 @@ if (typeof(window['Reveal']) !== 'undefined') {
           content="${contentSecurityPolicy}"
         />`
         : ""
-      }
+    }
 
         ${this.generateStylesForPreview(
       isPresentationMode,
@@ -999,7 +1003,7 @@ if (typeof(window['Reveal']) !== 'undefined') {
       <body class="preview-container">
         <div class="mume markdown-preview" for="preview" ${
       isPresentationMode ? "data-presentation-mode" : ""
-      }>
+    }>
           ${html}
         </div>
         ${body}
@@ -1306,7 +1310,9 @@ for (var i = 0; i < flowcharts.length; i++) {
             async: true,
           });
         } else {
-          dependencies.push({src: "/reveal/plugin/notes/notes.js", async: true}); // TODO: copy notes.js file to corresponding folder
+          //dependencies.push({src: `/reveal/plugin/notes/notes.js`, async: true}); // TODO: copy notes.js file to corresponding folder
+          presentationScript = `
+          <script src='${options.privateCDNurl}/reveal/plugin/notes/notes.js'></script>`
         }
       }
       if (presentationConfig["enableChalkboard"]) {
@@ -1319,7 +1325,9 @@ for (var i = 0; i < flowcharts.length; i++) {
             async: true,
           });
         } else {
-          dependencies.push({src: "/reveal/plugin/notes/notes.js", async: true}); // TODO: copy notes.js file to corresponding folder
+          //dependencies.push({src: `/reveal/plugin/chalkboard/chalkboard.js`, async: true}); // TODO: copy chalkboard.js file to corresponding folder
+          presentationScript = `
+          <script src='${options.privateCDNurl}/reveal/plugin/chalkboard/chalkboard.js'></script>`
         }
       }
       if (presentationConfig["enableFullscreen"]) {
@@ -1332,7 +1340,9 @@ for (var i = 0; i < flowcharts.length; i++) {
             async: true,
           });
         } else {
-          dependencies.push({src: "/reveal/plugin/notes/notes.js", async: true}); // TODO: copy notes.js file to corresponding folder
+          //dependencies.push({src: `/reveal/plugin/fullscreen/fullscreen.js`, async: true}); // TODO: copy fullscreen.js file to corresponding folder
+          presentationScript = `
+          <script src='${options.privateCDNurl}/reveal/plugin/fullscreen/fullscreen.js'></script>`
         }
       }
       presentationConfig["dependencies"] = dependencies;
@@ -1354,7 +1364,7 @@ for (var i = 0; i < flowcharts.length; i++) {
           ),
           )
           : ""
-        }
+      }
       </style>
       `;
       presentationInitScript = `
@@ -1480,7 +1490,7 @@ ${
         yamlConfig["html"] && yamlConfig["html"]["toc"]
           ? `document.body.setAttribute('html-show-sidebar-toc', true)`
           : ""
-        }
+      }
 var sidebarTOCBtn = document.getElementById('sidebar-toc-btn')
 sidebarTOCBtn.addEventListener('click', function(event) {
   event.stopPropagation()
@@ -1559,10 +1569,10 @@ sidebarTOCBtn.addEventListener('click', function(event) {
     </head>
     <body ${options.isForPrint ? "" : 'for="html-export"'} ${
       yamlConfig["isPresentationMode"] ? "data-presentation-mode" : ""
-      }>
+    }>
       <div class="mume markdown-preview ${princeClass} ${elementClass}" ${
       yamlConfig["isPresentationMode"] ? "data-presentation-mode" : ""
-      } ${elementId ? `id="${elementId}"` : ""}>
+    } ${elementId ? `id="${elementId}"` : ""}>
       ${html}
       </div>
       ${sidebarTOC}
@@ -1801,8 +1811,11 @@ for (var i = 0; i < flowcharts.length; i++) {
             src: path.resolve(extensionDirectoryPath, './dependencies/reveal/plugin/notes/notes.js'),
             async: true
           })
-        else
-          dependencies.push({src: '/reveal/plugin/notes/notes.js', async: true}) // TODO: copy notes.js file to corresponding folder
+        else {
+          //dependencies.push({src: `/reveal/plugin/notes/notes.js`, async: true}) // TODO: copy notes.js file to corresponding folder
+          presentationScript = `
+          <script src='${options.privateCDNurl}/reveal/plugin/notes/notes.js'></script>`
+        }
       }
       presentationConfig['dependencies'] = dependencies
 
@@ -2056,6 +2069,7 @@ sidebarTOCBtn.addEventListener('click', function(event) {
       embedLocalImages,
       offline,
       embedSVG,
+      privateCDNurl: 'https://simple.showdeo.com/cdn',
     });
 
     // presentation speaker notes
@@ -2112,7 +2126,8 @@ sidebarTOCBtn.addEventListener('click', function(event) {
       isForPrince: false,
       embedLocalImages: embedLocalImages,
       offline: offline,
-      embedSVG: embedSVG
+      embedSVG: embedSVG,
+      privateCDNurl: 'https://simple.showdeo.com/cdn',
     })
 
     files["html"] = html
@@ -2157,7 +2172,8 @@ sidebarTOCBtn.addEventListener('click', function(event) {
       isForPrince: false,
       embedLocalImages: embedLocalImages,
       offline: offline,
-      embedSVG: embedSVG
+      embedSVG: embedSVG,
+      privateCDNurl: 'https://simple.showdeo.com/cdn'
     })
 
     parts["htmlParts"] = htmlParts
@@ -2201,7 +2217,7 @@ sidebarTOCBtn.addEventListener('click', function(event) {
       isForPrint: true,
       isForPrince: false,
       embedLocalImages: false,
-      offline: true,
+      offline: true
     });
 
     let browser = null;
@@ -2587,7 +2603,7 @@ sidebarTOCBtn.addEventListener('click', function(event) {
               /*this.getPrismTheme(false)*/ MarkdownEngine.AutoPrismThemeMap[
             ebookConfig["theme"] || this.config.previewTheme
               ]
-              }`,
+            }`,
           ),
           {encoding: "utf-8"},
         ),
@@ -3169,7 +3185,7 @@ sidebarTOCBtn.addEventListener('click', function(event) {
           codeBlockSpacesAhead = match[1].length;
           outputString += `${
             match[1]
-            }\`\`\`{.text data-role="codeBlock" data-info="${utility.escapeString(
+          }\`\`\`{.text data-role="codeBlock" data-info="${utility.escapeString(
             info,
           )}" data-parsed-info="${utility.escapeString(
             JSON.stringify(parsedInfo),
