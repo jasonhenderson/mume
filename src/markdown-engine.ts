@@ -597,7 +597,7 @@ if (typeof(window['Reveal']) !== 'undefined') {
         el.innerHTML = '<pre class="language-text">' + error.toString() + '</pre>'
       }
       for (var i = 0; i < vegaEls.length; i++) {
-        const vegaEl = vegaEls[i]
+        let vegaEl = vegaEls[i]
         try {
           var spec = JSON.parse(vegaEl.textContent);
           vegaEmbed(vegaEl, spec, { actions: false, renderer: 'svg' })
@@ -1283,17 +1283,13 @@ for (var i = 0; i < flowcharts.length; i++) {
     let presentationInitScript = "";
     if (yamlConfig["isPresentationMode"]) {
       if (options.offline) {
-        presentationScript = `
-        <script src='file:///${path.resolve(
-          extensionDirectoryPath,
-          "./dependencies/reveal/lib/js/head.min.js",
-        )}'></script>
-        <script src='file:///${path.resolve(
-          extensionDirectoryPath,
+        presentationScript += `
+        <script src='file:///${path.resolve(extensionDirectoryPath, "./dependencies/reveal/lib/js/head.min.js")}'></script>
+        <script src='file:///${path.resolve(extensionDirectoryPath,
           "./dependencies/reveal/js/reveal.js",
         )}'></script>`;
       } else {
-        presentationScript = `
+        presentationScript += `
         <script src='https://cdn.jsdelivr.net/npm/reveal.js@3.7.0/lib/js/head.min.js'></script>
         <script src='https://cdn.jsdelivr.net/npm/reveal.js@3.7.0/js/reveal.js'></script>`;
       }
@@ -1303,45 +1299,36 @@ for (var i = 0; i < flowcharts.length; i++) {
       if (presentationConfig["enableSpeakerNotes"]) {
         if (options.offline) {
           dependencies.push({
-            src: path.resolve(
-              extensionDirectoryPath,
-              "./dependencies/reveal/plugin/notes/notes.js",
-            ),
+            src: path.resolve(extensionDirectoryPath, "./dependencies/reveal/plugin/notes/notes.js"),
             async: true,
           });
         } else {
           //dependencies.push({src: `/reveal/plugin/notes/notes.js`, async: true}); // TODO: copy notes.js file to corresponding folder
-          presentationScript = `
+          presentationScript += `
           <script src='${options.privateCDNurl}/reveal/plugin/notes/notes.js'></script>`
         }
       }
       if (presentationConfig["enableChalkboard"]) {
         if (options.offline) {
           dependencies.push({
-            src: path.resolve(
-              extensionDirectoryPath,
-              "./dependencies/reveal/plugin/chalkboard/chalkboard.js",
-            ),
+            src: path.resolve(extensionDirectoryPath, "./dependencies/reveal/plugin/chalkboard/chalkboard.js"),
             async: true,
           });
         } else {
           //dependencies.push({src: `/reveal/plugin/chalkboard/chalkboard.js`, async: true}); // TODO: copy chalkboard.js file to corresponding folder
-          presentationScript = `
+          presentationScript += `
           <script src='${options.privateCDNurl}/reveal/plugin/chalkboard/chalkboard.js'></script>`
         }
       }
       if (presentationConfig["enableFullscreen"]) {
         if (options.offline) {
           dependencies.push({
-            src: path.resolve(
-              extensionDirectoryPath,
-              "./dependencies/reveal/plugin/fullscreen/fullscreen.js",
-            ),
+            src: path.resolve(extensionDirectoryPath, "./dependencies/reveal/plugin/fullscreen/fullscreen.js"),
             async: true,
           });
         } else {
           //dependencies.push({src: `/reveal/plugin/fullscreen/fullscreen.js`, async: true}); // TODO: copy fullscreen.js file to corresponding folder
-          presentationScript = `
+          presentationScript += `
           <script src='${options.privateCDNurl}/reveal/plugin/fullscreen/fullscreen.js'></script>`
         }
       }
@@ -1350,19 +1337,11 @@ for (var i = 0; i < flowcharts.length; i++) {
       presentationStyle = `
       <style>
       ${fs.readFileSync(
-        path.resolve(
-          extensionDirectoryPath,
-          "./dependencies/reveal/css/reveal.css",
-        ),
+        path.resolve(extensionDirectoryPath, "./dependencies/reveal/css/reveal.css"),
       )}
       ${
         options.isForPrint
-          ? fs.readFileSync(
-          path.resolve(
-            extensionDirectoryPath,
-            "./dependencies/reveal/css/print/pdf.css",
-          ),
-          )
+          ? fs.readFileSync(path.resolve(extensionDirectoryPath, "./dependencies/reveal/css/print/pdf.css"))
           : ""
       }
       </style>
@@ -1794,11 +1773,11 @@ for (var i = 0; i < flowcharts.length; i++) {
       presentationInitScript = ''
     if (yamlConfig["isPresentationMode"]) {
       if (options.offline) {
-        presentationScript = `
+        presentationScript += `
         <script src='file:///${path.resolve(extensionDirectoryPath, './dependencies/reveal/lib/js/head.min.js')}'></script>
         <script src='file:///${path.resolve(extensionDirectoryPath, './dependencies/reveal/js/reveal.js')}'></script>`
       } else {
-        presentationScript = `
+        presentationScript += `
         <script src='https://cdnjs.cloudflare.com/ajax/libs/reveal.js/3.7.0/lib/js/head.min.js'></script>
         <script src='https://cdnjs.cloudflare.com/ajax/libs/reveal.js/3.7.0/js/reveal.min.js'></script>`
       }
@@ -1813,10 +1792,35 @@ for (var i = 0; i < flowcharts.length; i++) {
           })
         else {
           //dependencies.push({src: `/reveal/plugin/notes/notes.js`, async: true}) // TODO: copy notes.js file to corresponding folder
-          presentationScript = `
+          presentationScript += `
           <script src='${options.privateCDNurl}/reveal/plugin/notes/notes.js'></script>`
         }
       }
+      if (presentationConfig["enableChalkboard"]) {
+        if (options.offline) {
+          dependencies.push({
+            src: path.resolve(extensionDirectoryPath, "./dependencies/reveal/plugin/chalkboard/chalkboard.js"),
+            async: true,
+          });
+        } else {
+          //dependencies.push({src: `/reveal/plugin/chalkboard/chalkboard.js`, async: true}); // TODO: copy chalkboard.js file to corresponding folder
+          presentationScript += `
+          <script src='${options.privateCDNurl}/reveal/plugin/chalkboard/chalkboard.js'></script>`
+        }
+      }
+      if (presentationConfig["enableFullscreen"]) {
+        if (options.offline) {
+          dependencies.push({
+            src: path.resolve(extensionDirectoryPath, "./dependencies/reveal/plugin/fullscreen/fullscreen.js"),
+            async: true,
+          });
+        } else {
+          //dependencies.push({src: `/reveal/plugin/fullscreen/fullscreen.js`, async: true}); // TODO: copy fullscreen.js file to corresponding folder
+          presentationScript += `
+          <script src='${options.privateCDNurl}/reveal/plugin/fullscreen/fullscreen.js'></script>`
+        }
+      }
+
       presentationConfig['dependencies'] = dependencies
 
       presentationStyle = `
